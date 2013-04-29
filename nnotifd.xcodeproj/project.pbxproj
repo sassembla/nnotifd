@@ -47,7 +47,6 @@
 		130F214E172E95CA00CFBDE2 /* SenTestingKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SenTestingKit.framework; path = Library/Frameworks/SenTestingKit.framework; sourceTree = DEVELOPER_DIR; };
 		130F2155172E95CA00CFBDE2 /* nnotifdTests-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "nnotifdTests-Info.plist"; sourceTree = "<group>"; };
 		130F2157172E95CA00CFBDE2 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		130F2159172E95CA00CFBDE2 /* nnotifdTests.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = nnotifdTests.h; sourceTree = "<group>"; };
 		130F215A172E95CB00CFBDE2 /* nnotifdTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = nnotifdTests.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -137,7 +136,6 @@
 		130F2153172E95CA00CFBDE2 /* nnotifdTests */ = {
 			isa = PBXGroup;
 			children = (
-				130F2159172E95CA00CFBDE2 /* nnotifdTests.h */,
 				130F215A172E95CB00CFBDE2 /* nnotifdTests.m */,
 				130F2154172E95CA00CFBDE2 /* Supporting Files */,
 			);

@@ -7,7 +7,11 @@
 //
 
 #import "AppDelegate.h"
-
+/**
+ NSDistributedNotificationを受けるサーバプログラム。
+ httpdとかを参考に、特定のNSDistributedNotoficationをサーブし、コマンドラインを実行する。
+ Objective-C serverの分派
+ */
 @implementation AppDelegate
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
