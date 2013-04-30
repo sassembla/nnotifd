@@ -9,5 +9,5 @@
 #import <Cocoa/Cocoa.h>
 
 @interface nnotifd : NSApplication
-
+int NSApplicationMain(int argc, const char *argv[]);
 @end
