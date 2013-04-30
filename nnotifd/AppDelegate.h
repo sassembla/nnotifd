@@ -36,6 +36,11 @@ typedef enum {
 
 
 
+//execute
+#define NN_HEADER   (@"nn@")
+#define NN_SPACE    (@" ")
+#define NN_DEFAULT_ROUTE    (@"NN_DEFAULT_ROUTE")
+
 
 @interface AppDelegate : NSObject <NSApplicationDelegate>
 
@@ -44,6 +49,8 @@ typedef enum {
 - (bool) isRunning;
 
 - (NSString * )identity;
+
+- (void) writeLogLine:(NSString * )message;
 - (NSString * )output;
 - (NSString * )outputPath;
 

@@ -42,15 +42,13 @@
 
 @implementation nnotifdTests
 
-- (void)setUp
-{
-    //なんもなければ消す
-    [super setUp];
-}
 
 - (void)tearDown
 {
-    //outファイルを消したりとか
+    //outファイルが存在すれば消す
+    NSFileManager * fileManager = [NSFileManager defaultManager];
+    [fileManager removeItemAtPath:TEST_OUTPUT error:NULL];
+    
     [super tearDown];
 }
 
@@ -71,7 +69,7 @@
  テスト用として、起動をアプリとして行う。状態確認のため。
  */
 - (void) testLaunchAsAppWithoutOpt {
-    NSDictionary * dict = @{@"-i":TEST_NOTIFICATION_NAME};
+    NSDictionary * dict = @{KEY_IDENTITY:TEST_NOTIFICATION_NAME};
     nnotifiedAppDel = [[AppDelegate alloc]initWithArgs:dict];
     
     bool running = [nnotifiedAppDel isRunning];
@@ -83,7 +81,7 @@
  起動オプションあり
  */
 - (void) testLaunchAsAppWithStartOpt {
-    NSDictionary * dict = @{@"-i":TEST_NOTIFICATION_NAME, @"-c": @"start"};
+    NSDictionary * dict = @{KEY_IDENTITY:TEST_NOTIFICATION_NAME, KEY_CONTROL: @"start"};
     
     nnotifiedAppDel = [[AppDelegate alloc]initWithArgs:dict];
    
@@ -96,8 +94,8 @@
  出力のオプションあり
  */
 - (void) testLaunchAsAppWithSomeOpt {
-    NSDictionary * dict = @{@"-i":TEST_NOTIFICATION_NAME,
-                            @"-o":TEST_OUTPUT};
+    NSDictionary * dict = @{KEY_IDENTITY:TEST_NOTIFICATION_NAME,
+                            KEY_OUTPUT:TEST_OUTPUT};
     nnotifiedAppDel = [[AppDelegate alloc]initWithArgs:dict];
 
     bool running = [nnotifiedAppDel isRunning];
@@ -114,14 +112,35 @@
  出力のオプションがあり、実際に出力が出ている
  */
 - (void) testCheckLaunchOutput {
-    NSDictionary * dict = @{@"-i":TEST_NOTIFICATION_NAME,
-                            @"-o":TEST_OUTPUT};
+    NSDictionary * dict = @{KEY_IDENTITY:TEST_NOTIFICATION_NAME,
+                            KEY_OUTPUT:TEST_OUTPUT};
     nnotifiedAppDel = [[AppDelegate alloc]initWithArgs:dict];
     
-    //processがlaunchされたことは検知できるはず
+    //processがlaunchされたことはメッセージから検知できるはず
     NSString * readFromOutput = [nnotifiedAppDel output];
     STAssertTrue([readFromOutput isEqualToString:MESSAGE_LAUNCHED], @"not match, %@", readFromOutput);
 }
+
+/**
+ nnotifからのstartを受け取る
+ */
+- (void) testLaunchAsAppWithoutStartThenReceiveStart {
+    NSDictionary * dict = @{KEY_IDENTITY:TEST_NOTIFICATION_NAME,
+                            KEY_OUTPUT:TEST_OUTPUT};
+    nnotifiedAppDel = [[AppDelegate alloc]initWithArgs:dict];
+    
+    //送付
+    //スペース区切りでコマンドを送る。かな？　specifierはSublimeSocketの方式をまねるといい感じ。nn@で始まっている文字列だった場合、execとして扱おう。
+    NSArray * execArray = @[NN_HEADER, KEY_CONTROL, CODE_START];
+    NSString * exec = [execArray componentsJoinedByString:NN_SPACE];
+    TestDistNotificationSender * sender = [[TestDistNotificationSender alloc] init];
+    [sender sendNotification:TEST_NOTIFICATION_NAME withMessage:exec withKey:NN_DEFAULT_ROUTE];
+    
+    //起動しているはず
+    bool running = [nnotifiedAppDel isRunning];
+    STAssertTrue(running, @"not running");
+}
+
 
 /**
  コマンドラインからの起動、startオプションあり
@@ -166,32 +185,6 @@
     STFail(@"Unit tests are not implemented yet in nnotifdTests");
 }
 
-/**
- 特定のNSDistNotifを受信する
- */
-- (void) testReceiveNSDistNotif {
-    //debug用の直接送信
-    //sender
-    TestDistNotificationSender * sender = [[TestDistNotificationSender alloc]init];
-    
-    
-    //送付
-    [sender sendNotification:TEST_NOTIFICATION_NAME withMessage:TEST_DISTNOTIF_MESSAGE withKey:@"message"];
-
-    
-    //受信カウンタアップ
-    int receivedCount = 0;
-    STFail(@"Unit tests are not implemented yet in nnotifdTests");
-}
-
-
-/**
- 特定のNSDistNotifを受信後、ファイルを作成する
- */
-- (void) testReceiveNSDistNotifThenTouchFile {
-    //ファイルが存在するので、サイズが取得できる
-    STFail(@"Unit tests are not implemented yet in nnotifdTests");
-}
 
 
 

@@ -25,6 +25,7 @@
  */
 @implementation AppDelegate {
     NSMutableDictionary * m_settingDict;
+    NSMutableArray * m_logLineArray;
 }
 
 - (id) initWithArgs:(NSDictionary * )dict {
@@ -47,12 +48,25 @@
                              KEY_CONTROL:[[NSNumber alloc]initWithInt:initializedStatus]}];
             
             if (dict[KEY_OUTPUT]) {
-                //このパスへの書き込み権利があるかどうか、とか、ここで判断できると思うけど。
+                NSFileManager * fileManager = [NSFileManager defaultManager];
+
+                //存在しても何も言わないので、先に存在チェック
+                NSFileHandle * readHandle = [NSFileHandle fileHandleForReadingAtPath:dict[KEY_OUTPUT]];
                 
-                //すでにファイルがあるかどうか
-                //書き込み可能かどうか(writecheck)
+                //ファイルが既に存在しているか
+                if (readHandle) {
+                    NSLog(@"output-target file already exist, we append.");
+                }
                 
-                [m_settingDict setValue:dict[KEY_OUTPUT] forKey:KEY_OUTPUT];
+                bool result = [fileManager createFileAtPath:dict[KEY_OUTPUT] contents:nil attributes:nil];
+                
+                NSAssert1(result, @"the output-file:%@ cannot generate or append", dict[KEY_OUTPUT]);
+                
+                if (result) {
+                    [m_settingDict setValue:dict[KEY_OUTPUT] forKey:KEY_OUTPUT];
+                }
+                
+                [self writeLogLine:MESSAGE_LAUNCHED];
             }
             
         }
@@ -90,9 +104,18 @@
 }
 
 - (void) receiver:(NSNotification * )notif {
-
+    NSDictionary * dict = [notif userInfo];
     switch ([m_settingDict[KEY_CONTROL] intValue]) {
         case STATUS_STOPPED:{
+            //起動サインなどを受け入れる
+            if (dict[NN_DEFAULT_ROUTE]) {
+                NSString * execs = [[NSString alloc]initWithString:dict[NN_DEFAULT_ROUTE]];
+                if ([execs hasPrefix:NN_HEADER]) {
+                    //control
+                    
+                    //NN_HEADERを取り除いて、
+                }
+            }
             
             break;
         }
@@ -100,18 +123,14 @@
         case STATUS_RUNNING:{
             //サーブしてるので、内容に合わせた挙動を行う
             
+            //ルーティングを行う
+            
             break;
         }
             
         default:
             break;
     }
-}
-
-
-- (void)applicationDidFinishLaunching:(NSNotification *)aNotification
-{
-    //起動
 }
 
 - (bool) isRunning {
@@ -125,6 +144,19 @@
 
 //output
 
+- (void) writeLogLine:(NSString * )message {
+    m_logLineArray = [[NSMutableArray alloc] init];
+    [m_logLineArray addObject:message];
+    
+    //stream outが必要？
+//    NSFileHandle * readHandle = [NSFileHandle fileHandleForReadingAtPath:m_settingDict[KEY_OUTPUT]];
+//    NSAssert1(readHandle, @"output-target file not found:%@", m_settingDict[KEY_OUTPUT]);
+//    
+//    NSString * linedMessage = [[NSString alloc] initWithFormat:@"%@\n", message];
+//    [readHandle writeData:[linedMessage dataUsingEncoding:NSUTF8StringEncoding]];
+//    
+//    NSLog(@"over");
+}
 
 /**
  output ファイルの文字列を改行コードごと総て吐き出す
@@ -136,7 +168,6 @@
     NSData * data = [handle readDataToEndOfFile];
 
     if (data) return [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-    
     return nil;
 }
 
