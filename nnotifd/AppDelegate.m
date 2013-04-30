@@ -25,50 +25,41 @@
  */
 @implementation AppDelegate {
     NSMutableDictionary * m_settingDict;
-    NSMutableArray * m_logLineArray;
+
+    NSFileHandle * m_writeHandle;
+    
+    bool m_bootFromApp;
+    NSMutableArray * m_bufferedOutput;
 }
+
 
 - (id) initWithArgs:(NSDictionary * )dict {
     if (self = [super init]) {
+
+        m_bootFromApp = false;
+        if (dict[DEBUG_BOOTFROMAPP]) {
+            m_bootFromApp = true;
+        }
         
         if (dict[KEY_IDENTITY]) {
             [[NSDistributedNotificationCenter defaultCenter]addObserver:self selector:@selector(receiver:) name:dict[KEY_IDENTITY] object:nil];
+            
+            if (dict[KEY_OUTPUT]) [self setOutput:dict[KEY_OUTPUT]];
             
             //init with stopped
             m_settingDict = [[NSMutableDictionary alloc]initWithDictionary:@{KEY_CONTROL:[[NSNumber alloc]initWithInt:STATUS_STOPPED]}];
             int initializedStatus = STATUS_STOPPED;
             
-            
             if (dict[KEY_CONTROL]) {
-                initializedStatus = [self serve:dict[KEY_CONTROL]];
+                initializedStatus = [self setServe:dict[KEY_CONTROL]];
             }
             
             m_settingDict = [[NSMutableDictionary alloc]initWithDictionary:@{
                              KEY_IDENTITY:dict[KEY_IDENTITY],
                              KEY_CONTROL:[[NSNumber alloc]initWithInt:initializedStatus]}];
+            if (dict[KEY_OUTPUT]) [m_settingDict setValue:dict[KEY_OUTPUT] forKey:KEY_OUTPUT];
             
-            if (dict[KEY_OUTPUT]) {
-                NSFileManager * fileManager = [NSFileManager defaultManager];
-
-                //存在しても何も言わないので、先に存在チェック
-                NSFileHandle * readHandle = [NSFileHandle fileHandleForReadingAtPath:dict[KEY_OUTPUT]];
-                
-                //ファイルが既に存在しているか
-                if (readHandle) {
-                    NSLog(@"output-target file already exist, we append.");
-                }
-                
-                bool result = [fileManager createFileAtPath:dict[KEY_OUTPUT] contents:nil attributes:nil];
-                
-                NSAssert1(result, @"the output-file:%@ cannot generate or append", dict[KEY_OUTPUT]);
-                
-                if (result) {
-                    [m_settingDict setValue:dict[KEY_OUTPUT] forKey:KEY_OUTPUT];
-                }
-                
-                [self writeLogLine:MESSAGE_LAUNCHED];
-            }
-            
+            [self writeLogLine:MESSAGE_LAUNCHED];
         }
     }
     return self;
@@ -77,7 +68,7 @@
 /**
  serve control
  */
-- (int) serve:(NSString * )code {
+- (int) setServe:(NSString * )code {
     
     if ([code isEqualToString:CODE_START]) {
         int status = [m_settingDict[KEY_CONTROL] intValue];
@@ -91,7 +82,8 @@
             case STATUS_STOPPED:{
                 [m_settingDict setValue:[NSNumber numberWithInt:STATUS_RUNNING] forKey:KEY_CONTROL];
                 
-                
+                [self writeLogLine:MESSAGE_SERVING];
+
                 return STATUS_RUNNING;
             }
                 
@@ -111,9 +103,12 @@
             if (dict[NN_DEFAULT_ROUTE]) {
                 NSString * execs = [[NSString alloc]initWithString:dict[NN_DEFAULT_ROUTE]];
                 if ([execs hasPrefix:NN_HEADER]) {
-                    //control
-                    
-                    //NN_HEADERを取り除いて、
+                    NSArray * execArray = [[NSArray alloc]initWithArray:[execs componentsSeparatedByString:NN_SPACE]];
+
+                    if (1 < [execArray count]) {
+                        NSArray * subarray = [execArray subarrayWithRange:NSMakeRange(1, [execArray count]-1)];
+                        [self readInput:subarray];
+                    }
                 }
             }
             
@@ -133,6 +128,69 @@
     }
 }
 
+- (void) readInput:(NSArray * )execArray {
+    
+    NSMutableDictionary * argsDict = [[NSMutableDictionary alloc]init];
+    
+    for (int i = 0; i < [execArray count]; i++) {
+        NSString * keyOrValue = execArray[i];
+        
+        if ([keyOrValue hasPrefix:KEY_PERFIX]) {
+            NSString * key = keyOrValue;
+            
+            // get value
+            if (i + 1 < [execArray count]) {
+                NSString * value = execArray[i + 1];
+                if ([value hasPrefix:KEY_PERFIX]) {
+                    [argsDict setValue:@"" forKey:key];
+                } else {
+                    [argsDict setValue:value forKey:key];
+                }
+            }
+            else {
+                NSString * value = @"";
+                [argsDict setValue:value forKey:key];
+            }
+        }
+    }
+    
+    [self writeLogLine:MESSAGE_SETTINGRECEIVED];
+    
+    if (0 < [argsDict count]) {
+        [self update:argsDict];
+    }
+}
+
+/**
+ 入力を元に、動作を変更する
+ */
+- (void) update:(NSDictionary * )argsDict {
+    if (argsDict[KEY_OUTPUT]) {
+        [self setOutput:argsDict[KEY_OUTPUT]];
+    }
+    
+    if (argsDict[KEY_KILL]) {
+        
+        [self writeLogLine:MESSAGE_TEARDOWN];
+        
+        if (m_bootFromApp) {
+            
+        } else {
+            exit(0);
+        }
+        return;
+    }
+    
+    int latestStatus = [m_settingDict[KEY_CONTROL] intValue];
+    
+    if (argsDict[KEY_CONTROL]) {
+        latestStatus = [self setServe:argsDict[KEY_CONTROL]];
+    }
+    
+    [self writeLogLine:MESSAGE_UPDATED];
+}
+
+
 - (bool) isRunning {
     return [m_settingDict[KEY_CONTROL] intValue] == STATUS_RUNNING;
 }
@@ -142,33 +200,49 @@
 }
 
 
+
+
+
 //output
 
 - (void) writeLogLine:(NSString * )message {
-    m_logLineArray = [[NSMutableArray alloc] init];
-    [m_logLineArray addObject:message];
+    if (m_bufferedOutput) [m_bufferedOutput addObject:message];
+    if (m_writeHandle) {
+        NSString * linedMessage = [[NSString alloc] initWithFormat:@"%@\n", message];
+        [m_writeHandle writeData:[linedMessage dataUsingEncoding:NSUTF8StringEncoding]];
+    }
+}
+
+
+/**
+ outputのセット
+ */
+- (void) setOutput:(NSString * )path {
+    NSFileManager * fileManager = [NSFileManager defaultManager];
     
-    //stream outが必要？
-//    NSFileHandle * readHandle = [NSFileHandle fileHandleForReadingAtPath:m_settingDict[KEY_OUTPUT]];
-//    NSAssert1(readHandle, @"output-target file not found:%@", m_settingDict[KEY_OUTPUT]);
-//    
-//    NSString * linedMessage = [[NSString alloc] initWithFormat:@"%@\n", message];
-//    [readHandle writeData:[linedMessage dataUsingEncoding:NSUTF8StringEncoding]];
-//    
-//    NSLog(@"over");
+    //存在しても何も言わないので、先に存在チェック
+    NSFileHandle * readHandle = [NSFileHandle fileHandleForReadingAtPath:path];
+    
+    //ファイルが既に存在しているか
+    if (readHandle) {
+        NSLog(@"output-target file already exist, we append.");
+    }
+    
+    bool result = [fileManager createFileAtPath:path contents:nil attributes:nil];
+    
+    NSAssert1(result, @"the output-file:%@ cannot generate or append", path);
+    
+    if (result) {
+        m_bufferedOutput = [[NSMutableArray alloc]init];
+        m_writeHandle = [NSFileHandle fileHandleForWritingAtPath:path];
+    }
 }
 
 /**
  output ファイルの文字列を改行コードごと総て吐き出す
  */
-- (NSString * )output {
-    NSAssert(m_settingDict[KEY_OUTPUT], @"no-output set yet.");
-    
-    NSFileHandle * handle = [NSFileHandle fileHandleForReadingAtPath:m_settingDict[KEY_OUTPUT]];
-    NSData * data = [handle readDataToEndOfFile];
-
-    if (data) return [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-    return nil;
+- (NSArray * )bufferedOutput {
+    return m_bufferedOutput;
 }
 
 - (NSString * )outputPath {

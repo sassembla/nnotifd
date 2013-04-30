@@ -9,7 +9,6 @@
 #import <Cocoa/Cocoa.h>
 
 
-#define NNOTIFD (@"NNOTIFD")
 
 #define KEY_PERFIX  (@"-")
 
@@ -26,6 +25,9 @@ typedef enum {
 #define KEY_IDENTITY    (@"-i")
 #define KEY_CONTROL     (@"-c")
 #define KEY_OUTPUT      (@"-o")
+#define KEY_KILL        (@"-kill")
+
+#define DEBUG_BOOTFROMAPP   (@"DEBUG_BOOTFROMAPP")
 
 #define PRIVATEKEY_SERVERS     (@"servers")
 
@@ -33,8 +35,10 @@ typedef enum {
 
 
 #define MESSAGE_LAUNCHED    (@"nnotifd launched")
-
-
+#define MESSAGE_SETTINGRECEIVED (@"nnotifd setting-input received")
+#define MESSAGE_UPDATED     (@"nnotifd updated")
+#define MESSAGE_SERVING     (@"nnotifd start serving")
+#define MESSAGE_TEARDOWN    (@"nnotifd teardown")
 
 //execute
 #define NN_HEADER   (@"nn@")
@@ -51,7 +55,7 @@ typedef enum {
 - (NSString * )identity;
 
 - (void) writeLogLine:(NSString * )message;
-- (NSString * )output;
+- (NSArray * )bufferedOutput;
 - (NSString * )outputPath;
 
 - (void) stop;
