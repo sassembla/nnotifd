@@ -77,6 +77,45 @@
     TestDistNotificationSender * sender = [[TestDistNotificationSender alloc] init];
     [sender sendNotification:TEST_NOTIFICATION_NAME withMessage:exec withKey:NN_DEFAULT_ROUTE];
     
+    //生き残りがあればエラーで落とす
+    NSTask * task = [[NSTask alloc]init];
+    NSPipe * outPipe = [[NSPipe alloc]init];
+    NSPipe * outPipe2 = [[NSPipe alloc]init];
+    NSPipe * outPipe3 = [[NSPipe alloc]init];
+    
+    //ps aux | grep '[n]notifd' | awk '{print $2}'
+    
+    [task setStandardOutput:outPipe];
+    [task setLaunchPath:@"/bin/ps"];
+    [task setArguments:@[@"aux"]];
+
+    
+    NSTask * task2 = [[NSTask alloc]init];
+    [task2 setStandardInput:outPipe];
+    [task2 setStandardOutput:outPipe2];
+    [task2 setLaunchPath:@"/usr/bin/grep"];
+    [task2 setArguments:@[@"'[n]notifd'"]];
+    
+    NSTask * task3 = [[NSTask alloc]init];
+    [task3 setStandardInput:outPipe2];
+    [task3 setStandardOutput:outPipe3];
+    [task3 setLaunchPath:@"/usr/bin/awk"];
+    [task3 setArguments:@[@"'{print $2}'"]];
+
+    [task launch];
+//    [task2 launch];
+//    [task3 launch];
+    
+    NSFileHandle * handle = [outPipe fileHandleForReading];
+    NSData * data = [handle  readDataToEndOfFile];
+    NSString * str = [[NSString alloc]initWithData:data encoding:NSUTF8StringEncoding];
+    
+//    NSLog(@"str %@", str);
+    
+    [task waitUntilExit];
+//    [task2 waitUntilExit];
+//    [task3 waitUntilExit];
+    
     [super tearDown];
 }
 
@@ -94,7 +133,7 @@
 
 
 /**
- テスト用として、起動をアプリとして行う。
+ テスト用 起動をアプリとして行う
  */
 - (void) testLaunchAsAppWithoutOpt {
     NSDictionary * dict = @{KEY_IDENTITY:TEST_NOTIFICATION_NAME, DEBUG_BOOTFROMAPP:@""};
@@ -102,8 +141,6 @@
     
     bool running = [nnotifiedAppDel isRunning];
     STAssertFalse(running, @"is running");
-    
-    //ログにも記録が残っている
     
 }
 
@@ -184,6 +221,24 @@
 }
 
 /**
+ startを送る前はstopな筈
+ */
+- (void) testLaunchAsAppWithoutStart {
+    NSDictionary * dict = @{KEY_IDENTITY:TEST_NOTIFICATION_NAME,
+                            KEY_OUTPUT:TEST_OUTPUT,
+                            DEBUG_BOOTFROMAPP:@""};
+    nnotifiedAppDel = [[AppDelegate alloc]initWithArgs:dict];
+    
+    NSArray * array = [nnotifiedAppDel bufferedOutput];
+    STAssertTrue([array containsObject:MESSAGE_LAUNCHED], @"not contains");
+    STAssertFalse([array containsObject:MESSAGE_SERVING], @"contains");
+    
+    //起動していないはず
+    bool running = [nnotifiedAppDel isRunning];
+    STAssertFalse(running, @"running");
+}
+
+/**
  nnotifからのstartを受け取る
  */
 - (void) testLaunchAsAppWithoutStartThenReceiveStart {
@@ -193,8 +248,9 @@
     nnotifiedAppDel = [[AppDelegate alloc]initWithArgs:dict];
     
     //送付
-    NSArray * execArray = @[NN_HEADER, KEY_CONTROL, CODE_START];
+    NSArray * execArray = @[NN_HEADER, KEY_CONTROL, CODE_START, KEY_NOTIFID, @"2013/05/01_11:29:39"];
     NSString * exec = [execArray componentsJoinedByString:NN_SPACE];
+    
     TestDistNotificationSender * sender = [[TestDistNotificationSender alloc] init];
     [sender sendNotification:TEST_NOTIFICATION_NAME withMessage:exec withKey:NN_DEFAULT_ROUTE];
     
@@ -227,7 +283,7 @@
                             DEBUG_BOOTFROMAPP:@""};
     nnotifiedAppDel = [[AppDelegate alloc]initWithArgs:dict];
     
-    //送付
+    //kill送付
     NSArray * execArray = @[NN_HEADER, KEY_KILL];
     NSString * exec = [execArray componentsJoinedByString:NN_SPACE];
     TestDistNotificationSender * sender = [[TestDistNotificationSender alloc] init];
@@ -240,7 +296,107 @@
 
 
 
+/**
+ start後にstopNotifで停める
+ */
+- (void) testStopAsAppAfterStart {
+    NSDictionary * dict = @{KEY_IDENTITY:TEST_NOTIFICATION_NAME,
+                            KEY_CONTROL:CODE_START,
+                            KEY_OUTPUT:TEST_OUTPUT,
+                            DEBUG_BOOTFROMAPP:@""};
+    nnotifiedAppDel = [[AppDelegate alloc]initWithArgs:dict];
+    
+    //stop送付
+    NSArray * execArray = @[NN_HEADER, KEY_CONTROL, CODE_STOP];
+    NSString * exec = [execArray componentsJoinedByString:NN_SPACE];
+    TestDistNotificationSender * sender = [[TestDistNotificationSender alloc] init];
+    [sender sendNotification:TEST_NOTIFICATION_NAME withMessage:exec withKey:NN_DEFAULT_ROUTE];
 
+    [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:1.0]];
+    //停止した情報のログが残っている筈
+    NSArray * readFromOutputArray = [nnotifiedAppDel bufferedOutput];
+    STAssertTrue([readFromOutputArray containsObject:MESSAGE_STOPSERVING], @"not contains, %@", readFromOutputArray);
+}
+
+/**
+ notifでのstart後に停める
+ */
+- (void) testStopAsAppAfterNotifStart {
+    NSDictionary * dict = @{KEY_IDENTITY:TEST_NOTIFICATION_NAME,
+                            KEY_OUTPUT:TEST_OUTPUT,
+                            DEBUG_BOOTFROMAPP:@""};
+    nnotifiedAppDel = [[AppDelegate alloc]initWithArgs:dict];
+    
+    
+    {//start送付
+        NSArray * execArray = @[NN_HEADER, KEY_CONTROL, CODE_START];
+        NSString * exec = [execArray componentsJoinedByString:NN_SPACE];
+        TestDistNotificationSender * sender = [[TestDistNotificationSender alloc] init];
+        [sender sendNotification:TEST_NOTIFICATION_NAME withMessage:exec withKey:NN_DEFAULT_ROUTE];
+    }
+    
+    {//stop送付
+        NSArray * execArray = @[NN_HEADER, KEY_CONTROL, CODE_STOP];
+        NSString * exec = [execArray componentsJoinedByString:NN_SPACE];
+        TestDistNotificationSender * sender = [[TestDistNotificationSender alloc] init];
+        [sender sendNotification:TEST_NOTIFICATION_NAME withMessage:exec withKey:NN_DEFAULT_ROUTE];
+    }
+    
+    //停止した情報のログが残っている筈
+    NSArray * readFromOutputArray = [nnotifiedAppDel bufferedOutput];
+    STAssertTrue([readFromOutputArray containsObject:MESSAGE_STOPSERVING], @"not contains, %@", readFromOutputArray);    
+}
+
+/**
+ start無しに停める
+ */
+- (void) testStopAsAppWithoutStart {
+    NSDictionary * dict = @{KEY_IDENTITY:TEST_NOTIFICATION_NAME,
+                            KEY_OUTPUT:TEST_OUTPUT,
+                            DEBUG_BOOTFROMAPP:@""};
+    nnotifiedAppDel = [[AppDelegate alloc]initWithArgs:dict];
+    
+    //stop送付
+    NSArray * execArray = @[NN_HEADER, KEY_CONTROL, CODE_STOP];
+    NSString * exec = [execArray componentsJoinedByString:NN_SPACE];
+    
+    TestDistNotificationSender * sender = [[TestDistNotificationSender alloc] init];
+    [sender sendNotification:TEST_NOTIFICATION_NAME withMessage:exec withKey:NN_DEFAULT_ROUTE];
+
+    
+    //停止した情報のログは残っていない筈
+    NSArray * readFromOutputArray = [nnotifiedAppDel bufferedOutput];
+    STAssertFalse([readFromOutputArray containsObject:MESSAGE_STOPSERVING], @"contains, %@", readFromOutputArray);
+
+}
+
+
+
+// <- App / CommandLine -> /////////////////////////////
+
+
+/**
+ コマンドラインからの起動、startオプションなし
+ */
+- (void) testLaunchWithoutStart{
+    TestRunNnotifd * nnotifd = [[TestRunNnotifd alloc]init];
+    [nnotifd run:@[
+     KEY_IDENTITY,TEST_NOTIFICATION_NAME,
+     KEY_OUTPUT, TEST_OUTPUT]
+     ];
+    
+    //起動している筈なので、ファイルが書き出されている筈
+    NSFileHandle * handle = [NSFileHandle fileHandleForReadingAtPath:TEST_OUTPUT];
+    STAssertNotNil(handle, @"handle is nil");
+    
+    NSData * data = [handle readDataToEndOfFile];
+    NSString * string = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    
+    //MESSAGE_LAUNCHEDがあるはず
+    NSArray * array = [string componentsSeparatedByString:@"\n"];
+    
+    STAssertTrue([array containsObject:MESSAGE_LAUNCHED], @"MESSAGE_LAUNCHED is not contained");
+}
 
 /**
  コマンドラインからの起動、startオプションあり
@@ -260,11 +416,10 @@
     NSData * data = [handle readDataToEndOfFile];
     NSString * string = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
     
-    //MESSAGE_LAUNCHEDとMESSAGE_SERVINGがあるはず
+    //MESSAGE_SERVINGがあるはず
     NSArray * array = [string componentsSeparatedByString:@"\n"];
     
-    STAssertTrue([array containsObject:MESSAGE_LAUNCHED], @"MESSAGE_LAUNCHED not be contained");
-    STAssertTrue([array containsObject:MESSAGE_SERVING], @"MESSAGE_SERVING not be contained");
+    STAssertTrue([array containsObject:MESSAGE_SERVING], @"MESSAGE_SERVING is not contained");
 }
 
 /**
@@ -278,7 +433,7 @@
      ];
     
     
-    //送付
+    //kill送付
     NSArray * execArray = @[NN_HEADER, KEY_KILL];
     NSString * exec = [execArray componentsJoinedByString:NN_SPACE];
     TestDistNotificationSender * sender = [[TestDistNotificationSender alloc] init];
@@ -293,39 +448,59 @@
     
     //MESSAGE_TEARDOWNがあるはず
     NSArray * array = [string componentsSeparatedByString:@"\n"];
-    STAssertTrue([array containsObject:MESSAGE_TEARDOWN], @"MESSAGE_TEARDOWN not be contained");
+    STAssertTrue([array containsObject:MESSAGE_TEARDOWN], @"MESSAGE_TEARDOWN is not contained");
 }
 
-
-/**
- start以外のオプションが指定された場合
- */
-- (void) testLaunchWithIdentityAndOther {
-    STFail(@"Unit tests are not implemented yet in nnotifdTests");
-}
-
-/**
- Launch時未起動状態
- */
-- (void) testLaunchWithoutStart{
-    STFail(@"Unit tests are not implemented yet in nnotifdTests");
-}
-
-/**
- Launch時未起動状態からの起動
- */
-- (void) testStart {
-    STFail(@"Unit tests are not implemented yet in nnotifdTests");
-}
-
-- (void) testRestart {
-//    restart　入力はnnotif経由
-    STFail(@"Unit tests are not implemented yet in nnotifdTests");
+- (void) testStopAfterStart {
+    TestRunNnotifd * nnotifd = [[TestRunNnotifd alloc]init];
+    [nnotifd run:@[
+     KEY_CONTROL,CODE_START,
+     KEY_IDENTITY,TEST_NOTIFICATION_NAME,
+     KEY_OUTPUT, TEST_OUTPUT]
+     ];
+    
+    
+    //stop送付
+    NSArray * execArray = @[NN_HEADER, KEY_CONTROL, CODE_STOP];
+    NSString * exec = [execArray componentsJoinedByString:NN_SPACE];
+    TestDistNotificationSender * sender = [[TestDistNotificationSender alloc] init];
+    [sender sendNotification:TEST_NOTIFICATION_NAME withMessage:exec withKey:NN_DEFAULT_ROUTE];
+    
+    
+    //起動している筈なので、ファイルが書き出されている筈
+    NSFileHandle * handle = [NSFileHandle fileHandleForReadingAtPath:TEST_OUTPUT];
+    STAssertNotNil(handle, @"handle is nil");
+    NSData * data = [handle readDataToEndOfFile];
+    NSString * string = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    
+    //MESSAGE_STOPSERVINGがあるはず
+    NSArray * array = [string componentsSeparatedByString:@"\n"];
+    STAssertTrue([array containsObject:MESSAGE_STOPSERVING], @"MESSAGE_STOPSERVING is not contained");
 }
 
 - (void) testStop {
-//    stop 入力はnnotif経由
-    STFail(@"Unit tests are not implemented yet in nnotifdTests");
+    TestRunNnotifd * nnotifd = [[TestRunNnotifd alloc]init];
+    [nnotifd run:@[
+     KEY_IDENTITY,TEST_NOTIFICATION_NAME,
+     KEY_OUTPUT, TEST_OUTPUT]
+     ];
+    
+    //stop送付
+    NSArray * execArray = @[NN_HEADER, KEY_CONTROL, CODE_STOP];
+    NSString * exec = [execArray componentsJoinedByString:NN_SPACE];
+    TestDistNotificationSender * sender = [[TestDistNotificationSender alloc] init];
+    [sender sendNotification:TEST_NOTIFICATION_NAME withMessage:exec withKey:NN_DEFAULT_ROUTE];
+    
+    
+    //起動している筈なので、ファイルが書き出されている筈
+    NSFileHandle * handle = [NSFileHandle fileHandleForReadingAtPath:TEST_OUTPUT];
+    STAssertNotNil(handle, @"handle is nil");
+    NSData * data = [handle readDataToEndOfFile];
+    NSString * string = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    
+    //もともと停止しているので、MESSAGE_STOPSERVINGは無い。
+    NSArray * array = [string componentsSeparatedByString:@"\n"];
+    STAssertFalse([array containsObject:MESSAGE_STOPSERVING], @"MESSAGE_STOPSERVING is contained");
 }
 
 

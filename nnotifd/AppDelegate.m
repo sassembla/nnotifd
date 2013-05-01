@@ -32,7 +32,9 @@
     NSMutableArray * m_bufferedOutput;
 }
 
-
+/**
+ 起動時処理
+ */
 - (id) initWithArgs:(NSDictionary * )dict {
     if (self = [super init]) {
 
@@ -42,24 +44,26 @@
         }
         
         if (dict[KEY_IDENTITY]) {
+            m_settingDict = [[NSMutableDictionary alloc]initWithDictionary:@{KEY_IDENTITY:dict[KEY_IDENTITY]}];
+            
             [[NSDistributedNotificationCenter defaultCenter]addObserver:self selector:@selector(receiver:) name:dict[KEY_IDENTITY] object:nil];
             
-            if (dict[KEY_OUTPUT]) [self setOutput:dict[KEY_OUTPUT]];
+            if (dict[KEY_OUTPUT]) {
+                [self setOutput:dict[KEY_OUTPUT]];
+                [m_settingDict setValue:dict[KEY_OUTPUT] forKey:KEY_OUTPUT];
+                [self writeLogLine:MESSAGE_LAUNCHED];
+            }
             
             //init with stopped
-            m_settingDict = [[NSMutableDictionary alloc]initWithDictionary:@{KEY_CONTROL:[[NSNumber alloc]initWithInt:STATUS_STOPPED]}];
+            [m_settingDict setValue:[[NSNumber alloc]initWithInt:STATUS_STOPPED] forKey:KEY_CONTROL];
+            
             int initializedStatus = STATUS_STOPPED;
             
             if (dict[KEY_CONTROL]) {
                 initializedStatus = [self setServe:dict[KEY_CONTROL]];
             }
+            [m_settingDict setValue:[[NSNumber alloc]initWithInt:initializedStatus] forKey:KEY_CONTROL];
             
-            m_settingDict = [[NSMutableDictionary alloc]initWithDictionary:@{
-                             KEY_IDENTITY:dict[KEY_IDENTITY],
-                             KEY_CONTROL:[[NSNumber alloc]initWithInt:initializedStatus]}];
-            if (dict[KEY_OUTPUT]) [m_settingDict setValue:dict[KEY_OUTPUT] forKey:KEY_OUTPUT];
-            
-            [self writeLogLine:MESSAGE_LAUNCHED];
         }
     }
     return self;
@@ -69,10 +73,9 @@
  serve control
  */
 - (int) setServe:(NSString * )code {
+    int status = [m_settingDict[KEY_CONTROL] intValue];
     
     if ([code isEqualToString:CODE_START]) {
-        int status = [m_settingDict[KEY_CONTROL] intValue];
-        
         switch (status) {
             case STATUS_RUNNING:{
                 NSAssert(false, @"already running, %@", m_settingDict);
@@ -92,25 +95,46 @@
         }
     }
     
+    if ([code isEqualToString:CODE_STOP]) {
+        switch (status) {
+            case STATUS_RUNNING:{
+                [m_settingDict setValue:[NSNumber numberWithInt:STATUS_STOPPED] forKey:KEY_CONTROL];
+                
+                [self writeLogLine:MESSAGE_STOPSERVING];
+                
+                return STATUS_STOPPED;
+            }
+                
+            case STATUS_STOPPED:{
+                return STATUS_STOPPED;
+            }
+                
+            default:
+                break;
+        }
+    }
+    
     return -1;
 }
 
 - (void) receiver:(NSNotification * )notif {
     NSDictionary * dict = [notif userInfo];
+    if (dict[NN_DEFAULT_ROUTE]) {
+        NSString * execs = [[NSString alloc]initWithString:dict[NN_DEFAULT_ROUTE]];
+        if ([execs hasPrefix:NN_HEADER]) {
+            NSArray * execArray = [[NSArray alloc]initWithArray:[execs componentsSeparatedByString:NN_SPACE]];
+            
+            if (1 < [execArray count]) {
+                NSArray * subarray = [execArray subarrayWithRange:NSMakeRange(1, [execArray count]-1)];
+                [self readInput:subarray];
+            }
+        }
+    }
+
+    
     switch ([m_settingDict[KEY_CONTROL] intValue]) {
         case STATUS_STOPPED:{
             //起動サインなどを受け入れる
-            if (dict[NN_DEFAULT_ROUTE]) {
-                NSString * execs = [[NSString alloc]initWithString:dict[NN_DEFAULT_ROUTE]];
-                if ([execs hasPrefix:NN_HEADER]) {
-                    NSArray * execArray = [[NSArray alloc]initWithArray:[execs componentsSeparatedByString:NN_SPACE]];
-
-                    if (1 < [execArray count]) {
-                        NSArray * subarray = [execArray subarrayWithRange:NSMakeRange(1, [execArray count]-1)];
-                        [self readInput:subarray];
-                    }
-                }
-            }
             
             break;
         }
@@ -170,8 +194,11 @@
     }
     
     if (argsDict[KEY_KILL]) {
+        [[NSDistributedNotificationCenter defaultCenter]removeObserver:self name:m_settingDict[KEY_IDENTITY] object:nil];
         
         [self writeLogLine:MESSAGE_TEARDOWN];
+        
+        [m_settingDict removeAllObjects];
         
         if (m_bootFromApp) {
             
@@ -179,6 +206,10 @@
             exit(0);
         }
         return;
+    }
+    
+    if (argsDict[KEY_NOTIFID]) {
+        NSLog(@"届いた %@", argsDict[KEY_NOTIFID]);
     }
     
     int latestStatus = [m_settingDict[KEY_CONTROL] intValue];
@@ -250,11 +281,6 @@
     return m_settingDict[KEY_OUTPUT];
 }
 
-
-
-- (void) stop {
-    
-}
 
 
 @end

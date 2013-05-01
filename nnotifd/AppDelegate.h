@@ -20,12 +20,12 @@ typedef enum {
 
 #define CODE_START  (@"start")
 #define CODE_STOP   (@"stop")
-#define CODE_RESTART    (@"restart")
 
 #define KEY_IDENTITY    (@"-i")
 #define KEY_CONTROL     (@"-c")
 #define KEY_OUTPUT      (@"-o")
 #define KEY_KILL        (@"-kill")
+#define KEY_NOTIFID     (@"--nid")
 
 #define DEBUG_BOOTFROMAPP   (@"DEBUG_BOOTFROMAPP")
 
@@ -38,6 +38,7 @@ typedef enum {
 #define MESSAGE_SETTINGRECEIVED (@"nnotifd setting-input received")
 #define MESSAGE_UPDATED     (@"nnotifd updated")
 #define MESSAGE_SERVING     (@"nnotifd start serving")
+#define MESSAGE_STOPSERVING (@"nnotifd stop serving")
 #define MESSAGE_TEARDOWN    (@"nnotifd teardown")
 
 //execute
@@ -58,5 +59,4 @@ typedef enum {
 - (NSArray * )bufferedOutput;
 - (NSString * )outputPath;
 
-- (void) stop;
 @end
