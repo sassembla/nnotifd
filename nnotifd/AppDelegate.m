@@ -271,41 +271,76 @@
     NSArray * jsonArray = [NSJSONSerialization JSONObjectWithData:jsonData options:NSJSONReadingAllowFragments error:&err];
 
     if (err) {
-        [self writeLogLine:[NSString stringWithFormat:@"%@%@",MESSAGE_EXECUTE_FAILED, jsonStr]];
+        [self writeLogLine:[NSString stringWithFormat:@"%@%@ because of:%@", MESSAGE_EXECUTE_FAILED, jsonStr, err]];
     } else {
-        NSLog(@"jsonArray   %@", jsonArray);
+        NSMutableArray * tasks = [[NSMutableArray alloc]init];
+        NSMutableArray * currentExec = [[NSMutableArray alloc]init];
+        NSMutableArray * currentParams = [[NSMutableArray alloc]init];
         
+        NSMutableArray * currentOut = [[NSMutableArray alloc]init];
+        
+        for (NSString * execOrParam in jsonArray) {
+            if ([execOrParam isEqualToString:DEFINE_PIPE]) {//pipe
                 
-//        //値がこうで、
-//        NSArray * clArray = @[@"-t", identity, @"-k", key, @"-i", message];
-//        
-//        //実行がこうで、
-//        NSTask * task1 = [[NSTask alloc] init];
-//        [task1 setLaunchPath:NNOTIF];
-//        [task1 setArguments:clArray];
-//        
-//        //pipeがこうで、
-//        [task1 setStandardOutput:currentOut];
-//        [task1 setStandardInput:currentIn];
-//        
-//        //全部揃ってからの実行、と。
-//        [task1 launch];
-//        [task1 waitUntilExit];
-//        
-//        pipeの有無とかも考えつつやるのが良いのかなー。
-//        ゆーても複数のexecを渡すと、順が指定してあればpipeするよー、くらいしかないんだけど、
-//        そもそも直感的に、文字列で渡した物を実行、っつーのが一番ラクなんだけど、""とか邪魔だしなー。
-//        ストレートにやると、
-//        -eの終わりが判りづらいんだよな、、なによりそれを解析するのがめんどい。あ、無理だ。
-//        -e "pwd | echo -p http://~ \"/application support/test\""
-//        
-//        JSONArrayで、
-//        -e ["pwd","|","echo","-p","http://~","\"/application support/test\""] とかか。pipeでdeliして、headとそれ以外、でOK。
-//        
-//        パスとかが入る場合も考えやすい、かな？　JSONに含まれれば、Validateができる、というアドバンテージがある。
-//        OK、JSONにしよう。
+                if ([currentExec count] == 0) {
+                    [self writeLogLine:[NSString stringWithFormat:@"%@%@ because of:%@", MESSAGE_EXECUTE_FAILED, [jsonArray componentsJoinedByString:NN_SPACE], FAILBY_NOEXEC]];
+                    return;
+                }
+                
+                //task gen
+                NSTask * task = [[NSTask alloc]init];
+                [task setLaunchPath:currentExec[0]];
+                [task setArguments:currentParams];
+
+                if (0 < [currentOut count]) {
+                    [task setStandardInput:currentOut[0]];
+                }
+                
+                NSPipe * pipe = [[NSPipe alloc]init];
+                //続きがあるので、outを用意しておく
+                [task setStandardOutput:pipe];
+
+                [tasks addObject:task];
+                
+                //reset params
+                [currentExec removeAllObjects];
+                [currentParams removeAllObjects];
+                [currentOut removeAllObjects];
+                
+                //ready pipe for next
+                [currentOut addObject:pipe];
+                
+            } else {
+                //exec本体かパラメータ
+                if ([currentExec count] == 0) {
+                    [currentExec addObject:execOrParam];
+                } else {
+                    [currentParams addObject:execOrParam];
+                }
+            }
+        }
         
-        [self writeLogLine:[NSString stringWithFormat:@"%@%@",MESSAGE_EXECUTED, jsonArray]];
+        //最後の一つのtask genを行えば、OKなはず。
+        NSTask * lastTask = [[NSTask alloc]init];
+        [lastTask setLaunchPath:currentExec[0]];
+        [lastTask setArguments:currentParams];
+        
+        //存在すれば、outを受ける
+        if (0 < [currentOut count]) [lastTask setStandardInput:currentOut[0]];
+        [tasks addObject:lastTask];
+        @try {
+            for (NSTask * task in tasks) {
+                [task launch];
+            }
+            [self writeLogLine:[NSString stringWithFormat:@"%@%@",MESSAGE_EXECUTED, [jsonArray componentsJoinedByString:NN_SPACE]]];
+        }
+        @catch (NSException *exception) {
+            [self writeLogLine:[NSString stringWithFormat:@"%@%@ because of:%@", MESSAGE_EXECUTE_FAILED, [jsonArray componentsJoinedByString:NN_SPACE], exception]];
+        }
+        @finally {
+            
+        }
+        
     }
 }
 

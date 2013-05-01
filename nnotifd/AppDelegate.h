@@ -53,6 +53,10 @@ typedef enum {
 #define NN_SPACE    (@" ")
 #define NN_DEFAULT_ROUTE    (@"NN_DEFAULT_ROUTE")
 
+#define DEFINE_PIPE (@"|")
+
+#define FAILBY_NOEXEC   (@"there is no executable command before '|'")
+
 
 @interface AppDelegate : NSObject <NSApplicationDelegate>
 
