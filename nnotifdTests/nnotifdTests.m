@@ -77,42 +77,42 @@
     TestDistNotificationSender * sender = [[TestDistNotificationSender alloc] init];
     [sender sendNotification:TEST_NOTIFICATION_NAME withMessage:exec withKey:NN_DEFAULT_ROUTE];
     
-    //生き残りがあればエラーで落とす
-    NSTask * task = [[NSTask alloc]init];
-    NSPipe * outPipe = [[NSPipe alloc]init];
-    NSPipe * outPipe2 = [[NSPipe alloc]init];
-    NSPipe * outPipe3 = [[NSPipe alloc]init];
-    
-    //ps aux | grep '[n]notifd' | awk '{print $2}'
-    
-    [task setStandardOutput:outPipe];
-    [task setLaunchPath:@"/bin/ps"];
-    [task setArguments:@[@"aux"]];
-
-    
-    NSTask * task2 = [[NSTask alloc]init];
-    [task2 setStandardInput:outPipe];
-    [task2 setStandardOutput:outPipe2];
-    [task2 setLaunchPath:@"/usr/bin/grep"];
-    [task2 setArguments:@[@"'[n]notifd'"]];
-    
-    NSTask * task3 = [[NSTask alloc]init];
-    [task3 setStandardInput:outPipe2];
-    [task3 setStandardOutput:outPipe3];
-    [task3 setLaunchPath:@"/usr/bin/awk"];
-    [task3 setArguments:@[@"'{print $2}'"]];
-
-    [task launch];
-//    [task2 launch];
-//    [task3 launch];
-    
-    NSFileHandle * handle = [outPipe fileHandleForReading];
-    NSData * data = [handle  readDataToEndOfFile];
-    NSString * str = [[NSString alloc]initWithData:data encoding:NSUTF8StringEncoding];
+//    //生き残りがあればエラーで落とす、、つもりだったんだけど、テストのインスタンスの破棄はARCなんで、ここでも死なない。
+//    NSTask * task = [[NSTask alloc]init];
+//    NSPipe * outPipe = [[NSPipe alloc]init];
+//    NSPipe * outPipe2 = [[NSPipe alloc]init];
+//    NSPipe * outPipe3 = [[NSPipe alloc]init];
+//    
+//    //ps aux | grep '[n]notifd' | awk '{print $2}'
+//    
+//    [task setStandardOutput:outPipe];
+//    [task setLaunchPath:@"/bin/ps"];
+//    [task setArguments:@[@"aux"]];
+//
+//    
+//    NSTask * task2 = [[NSTask alloc]init];
+//    [task2 setStandardInput:outPipe];
+//    [task2 setStandardOutput:outPipe2];
+//    [task2 setLaunchPath:@"/usr/bin/grep"];
+//    [task2 setArguments:@[@"'[n]notifd'"]];
+//    
+//    NSTask * task3 = [[NSTask alloc]init];
+//    [task3 setStandardInput:outPipe2];
+//    [task3 setStandardOutput:outPipe3];
+//    [task3 setLaunchPath:@"/usr/bin/awk"];
+//    [task3 setArguments:@[@"'{print $2}'"]];
+//
+//    [task launch];
+////    [task2 launch];
+////    [task3 launch];
+//    
+//    NSFileHandle * handle = [outPipe fileHandleForReading];
+//    NSData * data = [handle  readDataToEndOfFile];
+//    NSString * str = [[NSString alloc]initWithData:data encoding:NSUTF8StringEncoding];
     
 //    NSLog(@"str %@", str);
     
-    [task waitUntilExit];
+//    [task waitUntilExit];
 //    [task2 waitUntilExit];
 //    [task3 waitUntilExit];
     
