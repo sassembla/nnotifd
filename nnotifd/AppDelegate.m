@@ -57,6 +57,11 @@
             //init with stopped
             [m_settingDict setValue:[[NSNumber alloc]initWithInt:STATUS_STOPPED] forKey:KEY_CONTROL];
             
+            if (dict[KEY_EXECUTE]) {
+                NSLog(@"cannot execute on launch. inputted executes are ignored.");
+                [self writeLogLine:MESSAGE_EXECUTE_IGNOREDONLAUNCH];
+            }
+            
             int initializedStatus = STATUS_STOPPED;
             
             if (dict[KEY_CONTROL]) {
@@ -122,11 +127,19 @@
     if (dict[NN_DEFAULT_ROUTE]) {
         NSString * execs = [[NSString alloc]initWithString:dict[NN_DEFAULT_ROUTE]];
         if ([execs hasPrefix:NN_HEADER]) {
-            NSArray * execArray = [[NSArray alloc]initWithArray:[execs componentsSeparatedByString:NN_SPACE]];
+            //まずはJSONとそれ以外に分離する
+            NSArray * execAndJSONArray = [[NSArray alloc]initWithArray:[execs componentsSeparatedByString:NN_JSON_PARTITION]];
+            
+            //残った部分をコマンドラインとして処理する
+            NSArray * execArray = [[NSArray alloc]initWithArray:[execAndJSONArray[0] componentsSeparatedByString:NN_SPACE]];
             
             if (1 < [execArray count]) {
                 NSArray * subarray = [execArray subarrayWithRange:NSMakeRange(1, [execArray count]-1)];
-                [self readInput:subarray];
+                if (1 < [execAndJSONArray count]) {
+                    [self readInput:subarray withParam:execAndJSONArray[1]];
+                } else {
+                    [self readInput:subarray withParam:nil];
+                }
             }
         }
     }
@@ -152,7 +165,7 @@
     }
 }
 
-- (void) readInput:(NSArray * )execArray {
+- (void) readInput:(NSArray * )execArray withParam:(NSString * )jsonParam {
     
     NSMutableDictionary * argsDict = [[NSMutableDictionary alloc]init];
     
@@ -178,17 +191,21 @@
         }
     }
     
-    [self writeLogLine:MESSAGE_SETTINGRECEIVED];
+    [self writeLogLine:MESSAGE_INPUTRECEIVED];
     
     if (0 < [argsDict count]) {
-        [self update:argsDict];
+        [self update:argsDict withParam:jsonParam];
     }
 }
 
 /**
  入力を元に、動作を変更する
  */
-- (void) update:(NSDictionary * )argsDict {
+- (void) update:(NSDictionary * )argsDict withParam:(NSString * )jsonParam {
+    if (argsDict[KEY_NOTIFID]) {
+        [self writeLogLine:[[NSString alloc]initWithFormat:@"%@%@",MESSAGE_MESSAGEID_RECEIVED, argsDict[KEY_NOTIFID]]];
+    }
+    
     if (argsDict[KEY_OUTPUT]) {
         [self setOutput:argsDict[KEY_OUTPUT]];
     }
@@ -208,17 +225,33 @@
         return;
     }
     
-    if (argsDict[KEY_NOTIFID]) {
-        NSLog(@"届いた %@", argsDict[KEY_NOTIFID]);
-    }
-    
     int latestStatus = [m_settingDict[KEY_CONTROL] intValue];
     
     if (argsDict[KEY_CONTROL]) {
         latestStatus = [self setServe:argsDict[KEY_CONTROL]];
+        [self writeLogLine:MESSAGE_UPDATED];
     }
     
-    [self writeLogLine:MESSAGE_UPDATED];
+    switch (latestStatus) {
+        case STATUS_STOPPED:{
+            if (argsDict[KEY_EXECUTE]) {
+                [self writeLogLine:MESSAGE_EXECUTE_IGNOREDBEFORESTART];
+            }
+            break;
+        }
+        case STATUS_RUNNING:{
+            if (argsDict[KEY_EXECUTE]) {
+                //read JSON
+                [self executeJson:jsonParam];
+            }
+            break;
+        }
+            
+        default:
+            break;
+    }
+    
+    
 }
 
 
@@ -230,7 +263,51 @@
     return m_settingDict[KEY_IDENTITY];
 }
 
+- (void) executeJson:(NSString * )jsonStr {
+    NSData * jsonData = [jsonStr dataUsingEncoding:NSUTF8StringEncoding];
+    
+    //JsonからArray、辞書は受け付けない。pipeを使うのを念頭においているので、ただ連結して実行するだけの形式がベスト。NSTaskか、、
+    NSError * err;
+    NSArray * jsonArray = [NSJSONSerialization JSONObjectWithData:jsonData options:NSJSONReadingAllowFragments error:&err];
 
+    if (err) {
+        [self writeLogLine:[NSString stringWithFormat:@"%@%@",MESSAGE_EXECUTE_FAILED, jsonStr]];
+    } else {
+        NSLog(@"jsonArray   %@", jsonArray);
+        
+                
+//        //値がこうで、
+//        NSArray * clArray = @[@"-t", identity, @"-k", key, @"-i", message];
+//        
+//        //実行がこうで、
+//        NSTask * task1 = [[NSTask alloc] init];
+//        [task1 setLaunchPath:NNOTIF];
+//        [task1 setArguments:clArray];
+//        
+//        //pipeがこうで、
+//        [task1 setStandardOutput:currentOut];
+//        [task1 setStandardInput:currentIn];
+//        
+//        //全部揃ってからの実行、と。
+//        [task1 launch];
+//        [task1 waitUntilExit];
+//        
+//        pipeの有無とかも考えつつやるのが良いのかなー。
+//        ゆーても複数のexecを渡すと、順が指定してあればpipeするよー、くらいしかないんだけど、
+//        そもそも直感的に、文字列で渡した物を実行、っつーのが一番ラクなんだけど、""とか邪魔だしなー。
+//        ストレートにやると、
+//        -eの終わりが判りづらいんだよな、、なによりそれを解析するのがめんどい。あ、無理だ。
+//        -e "pwd | echo -p http://~ \"/application support/test\""
+//        
+//        JSONArrayで、
+//        -e ["pwd","|","echo","-p","http://~","\"/application support/test\""] とかか。pipeでdeliして、headとそれ以外、でOK。
+//        
+//        パスとかが入る場合も考えやすい、かな？　JSONに含まれれば、Validateができる、というアドバンテージがある。
+//        OK、JSONにしよう。
+        
+        [self writeLogLine:[NSString stringWithFormat:@"%@%@",MESSAGE_EXECUTED, jsonArray]];
+    }
+}
 
 
 
@@ -239,7 +316,7 @@
 - (void) writeLogLine:(NSString * )message {
     if (m_bufferedOutput) [m_bufferedOutput addObject:message];
     if (m_writeHandle) {
-        NSString * linedMessage = [[NSString alloc] initWithFormat:@"%@\n", message];
+        NSString * linedMessage = [NSString stringWithFormat:@"%@\n", message];
         [m_writeHandle writeData:[linedMessage dataUsingEncoding:NSUTF8StringEncoding]];
     }
 }

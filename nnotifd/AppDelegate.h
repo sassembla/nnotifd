@@ -26,6 +26,7 @@ typedef enum {
 #define KEY_OUTPUT      (@"-o")
 #define KEY_KILL        (@"-kill")
 #define KEY_NOTIFID     (@"--nid")
+#define KEY_EXECUTE     (@"-e")
 
 #define DEBUG_BOOTFROMAPP   (@"DEBUG_BOOTFROMAPP")
 
@@ -35,7 +36,12 @@ typedef enum {
 
 
 #define MESSAGE_LAUNCHED    (@"nnotifd launched")
-#define MESSAGE_SETTINGRECEIVED (@"nnotifd setting-input received")
+#define MESSAGE_EXECUTE_IGNOREDONLAUNCH (@"nnotifd ignored executes on laundh")
+#define MESSAGE_EXECUTE_IGNOREDBEFORESTART  (@"nnotifd ignored executes before server start")
+#define MESSAGE_EXECUTE_FAILED  (@"nnotifd failed to execute:")
+#define MESSAGE_EXECUTED    (@"nnotifd executes was executed:")
+#define MESSAGE_MESSAGEID_RECEIVED  (@"nnotifd received notification id:")
+#define MESSAGE_INPUTRECEIVED (@"nnotifd input received")
 #define MESSAGE_UPDATED     (@"nnotifd updated")
 #define MESSAGE_SERVING     (@"nnotifd start serving")
 #define MESSAGE_STOPSERVING (@"nnotifd stop serving")
@@ -43,6 +49,7 @@ typedef enum {
 
 //execute
 #define NN_HEADER   (@"nn@")
+#define NN_JSON_PARTITION   (@"nn:")
 #define NN_SPACE    (@" ")
 #define NN_DEFAULT_ROUTE    (@"NN_DEFAULT_ROUTE")
 
