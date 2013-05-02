@@ -29,12 +29,14 @@
 #define NNOTIF  (@"./nnotif")//pwd = project-folder path.
 #define NNOTIFD (@"./app/nnotifd")
 
+#define TEST_NNOTIF_OUTPUT  (@"/Users/sassembla/Desktop/nnotif_test.txt")
+
 @interface TestDistNotificationSender : NSObject @end
 @implementation TestDistNotificationSender
 
 - (void) sendNotification:(NSString * )identity withMessage:(NSString * )message withKey:(NSString * )key {
     
-    NSArray * clArray = @[@"-t", identity, @"-k", key, @"-i", message];
+    NSArray * clArray = @[@"-t", identity, @"-k", key, @"-v", @"-o", TEST_NNOTIF_OUTPUT, @"-i", message];
     
     NSTask * task1 = [[NSTask alloc] init];
     [task1 setLaunchPath:NNOTIF];
@@ -103,6 +105,14 @@
     //concat with ,
     NSString * concatted = [addHeadAndTailQuote componentsJoinedByString:@","];
     return [[NSString alloc] initWithFormat:@"%@[%@]", NN_JSON_PARTITION, concatted];
+}
+
+/**
+ version表示
+ */
+- (void) testVersion {
+    NSDictionary * dict = @{KEY_IDENTITY:TEST_NOTIFICATION_NAME, DEBUG_BOOTFROMAPP:@"", KEY_VERSION:@""};
+    nnotifiedAppDel = [[AppDelegate alloc]initWithArgs:dict];
 }
 
 /**

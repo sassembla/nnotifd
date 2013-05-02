@@ -18,8 +18,11 @@ typedef enum {
     STATUS_RUNNING
 } nnotifd_status;
 
-#define CODE_START  (@"start")
-#define CODE_STOP   (@"stop")
+
+#define VERSION (@"0.8.0")
+
+#define KEY_VERSION     (@"-v")
+
 
 #define KEY_IDENTITY    (@"-i")
 #define KEY_CONTROL     (@"-c")
@@ -27,6 +30,10 @@ typedef enum {
 #define KEY_KILL        (@"-kill")
 #define KEY_NOTIFID     (@"--nid")
 #define KEY_EXECUTE     (@"-e")
+
+#define CODE_START  (@"start")
+#define CODE_STOP   (@"stop")
+
 
 #define DEBUG_BOOTFROMAPP   (@"DEBUG_BOOTFROMAPP")
 

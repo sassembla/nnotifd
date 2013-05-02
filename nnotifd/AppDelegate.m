@@ -36,6 +36,8 @@
  起動時処理
  */
 - (id) initWithArgs:(NSDictionary * )dict {
+    if (dict[KEY_VERSION]) NSLog(@"nnotifd version:%@", VERSION);
+    
     if (self = [super init]) {
 
         m_bootFromApp = false;
@@ -368,7 +370,7 @@
     
     //ファイルが既に存在しているか
     if (readHandle) {
-        NSLog(@"output-target file already exist, we append.");
+        NSLog(@"output-target file already exist, we overwrite.");
     }
     
     bool result = [fileManager createFileAtPath:path contents:nil attributes:nil];
