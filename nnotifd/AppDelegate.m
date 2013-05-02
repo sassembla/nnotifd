@@ -333,7 +333,7 @@
         @try {
             for (NSTask * task in tasks) {
                 [task launch];
-                NSLog(@"実行完了、task:%@", task);
+                [task waitUntilExit];
             }
             [self writeLogLine:[NSString stringWithFormat:@"%@%@",MESSAGE_EXECUTED, [jsonArray componentsJoinedByString:NN_SPACE]]];
         }
