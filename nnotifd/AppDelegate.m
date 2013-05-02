@@ -279,7 +279,6 @@
     if (err) {
         [self writeLogLine:[NSString stringWithFormat:@"%@%@ because of:%@", MESSAGE_EXECUTE_FAILED, jsonStr, err]];
     } else {
-        NSLog(@"jsonArray   %@", jsonArray);
         NSMutableArray * tasks = [[NSMutableArray alloc]init];
         NSMutableArray * currentExec = [[NSMutableArray alloc]init];
         NSMutableArray * currentParams = [[NSMutableArray alloc]init];
