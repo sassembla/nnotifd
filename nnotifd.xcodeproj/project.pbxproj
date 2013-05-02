@@ -18,8 +18,6 @@
 		130F215B172E95CB00CFBDE2 /* nnotifdTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 130F215A172E95CB00CFBDE2 /* nnotifdTests.m */; };
 		130F2166172E9B1E00CFBDE2 /* nnotifd.m in Sources */ = {isa = PBXBuildFile; fileRef = 130F2165172E9B1E00CFBDE2 /* nnotifd.m */; };
 		130F2167172E9B1E00CFBDE2 /* nnotifd.m in Sources */ = {isa = PBXBuildFile; fileRef = 130F2165172E9B1E00CFBDE2 /* nnotifd.m */; };
-		130F216F172FAFD500CFBDE2 /* KSMessenger.m in Sources */ = {isa = PBXBuildFile; fileRef = 130F216E172FAFD500CFBDE2 /* KSMessenger.m */; };
-		130F2170172FAFD500CFBDE2 /* KSMessenger.m in Sources */ = {isa = PBXBuildFile; fileRef = 130F216E172FAFD500CFBDE2 /* KSMessenger.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -52,8 +50,6 @@
 		130F215A172E95CB00CFBDE2 /* nnotifdTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = nnotifdTests.m; sourceTree = "<group>"; };
 		130F2164172E9B1E00CFBDE2 /* nnotifd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nnotifd.h; sourceTree = "<group>"; };
 		130F2165172E9B1E00CFBDE2 /* nnotifd.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = nnotifd.m; sourceTree = "<group>"; };
-		130F216D172FAFD500CFBDE2 /* KSMessenger.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = KSMessenger.h; sourceTree = "<group>"; };
-		130F216E172FAFD500CFBDE2 /* KSMessenger.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = KSMessenger.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -80,7 +76,6 @@
 		130F2124172E95CA00CFBDE2 = {
 			isa = PBXGroup;
 			children = (
-				130F216C172FAFD500CFBDE2 /* KSMessenger */,
 				130F2136172E95CA00CFBDE2 /* nnotifd */,
 				130F2153172E95CA00CFBDE2 /* nnotifdTests */,
 				130F212F172E95CA00CFBDE2 /* Frameworks */,
@@ -157,15 +152,6 @@
 				130F2156172E95CA00CFBDE2 /* InfoPlist.strings */,
 			);
 			name = "Supporting Files";
-			sourceTree = "<group>";
-		};
-		130F216C172FAFD500CFBDE2 /* KSMessenger */ = {
-			isa = PBXGroup;
-			children = (
-				130F216D172FAFD500CFBDE2 /* KSMessenger.h */,
-				130F216E172FAFD500CFBDE2 /* KSMessenger.m */,
-			);
-			path = KSMessenger;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -278,7 +264,6 @@
 				130F213D172E95CA00CFBDE2 /* main.m in Sources */,
 				130F2144172E95CA00CFBDE2 /* AppDelegate.m in Sources */,
 				130F2166172E9B1E00CFBDE2 /* nnotifd.m in Sources */,
-				130F216F172FAFD500CFBDE2 /* KSMessenger.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -288,7 +273,6 @@
 			files = (
 				130F215B172E95CB00CFBDE2 /* nnotifdTests.m in Sources */,
 				130F2167172E9B1E00CFBDE2 /* nnotifd.m in Sources */,
-				130F2170172FAFD500CFBDE2 /* KSMessenger.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -462,6 +446,7 @@
 				130F2160172E95CB00CFBDE2 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		130F2161172E95CB00CFBDE2 /* Build configuration list for PBXNativeTarget "nnotifdTests" */ = {
 			isa = XCConfigurationList;
@@ -470,6 +455,7 @@
 				130F2163172E95CB00CFBDE2 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

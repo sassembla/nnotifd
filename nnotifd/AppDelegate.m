@@ -8,7 +8,6 @@
 
 #import "AppDelegate.h"
 
-#import "KSMessenger.h"
 
 
 /**
@@ -275,6 +274,7 @@
     if (err) {
         [self writeLogLine:[NSString stringWithFormat:@"%@%@ because of:%@", MESSAGE_EXECUTE_FAILED, jsonStr, err]];
     } else {
+        NSLog(@"jsonArray   %@", jsonArray);
         NSMutableArray * tasks = [[NSMutableArray alloc]init];
         NSMutableArray * currentExec = [[NSMutableArray alloc]init];
         NSMutableArray * currentParams = [[NSMutableArray alloc]init];
@@ -333,11 +333,12 @@
         @try {
             for (NSTask * task in tasks) {
                 [task launch];
-                [task waitUntilExit];
+//                [task waitUntilExit];//待つと、3がこける、が、エラーじゃない。完了できないのか
             }
+            
             [self writeLogLine:[NSString stringWithFormat:@"%@%@",MESSAGE_EXECUTED, [jsonArray componentsJoinedByString:NN_SPACE]]];
         }
-        @catch (NSException *exception) {
+        @catch (NSException * exception) {
             [self writeLogLine:[NSString stringWithFormat:@"%@%@ because of:%@", MESSAGE_EXECUTE_FAILED, [jsonArray componentsJoinedByString:NN_SPACE], exception]];
         }
         @finally {

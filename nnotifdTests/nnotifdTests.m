@@ -27,7 +27,7 @@
 
 
 #define NNOTIF  (@"./nnotif")//pwd = project-folder path.
-#define NNOTIFD (@"./app/nnotifd")
+#define NNOTIFD (@"/Users/sassembla/Library/Developer/Xcode/DerivedData/nnotifd-ahjyuqfrcnbezcaagbkmwszlhqlj/Build/Products/Debug/nnotifd.app/Contents/MacOS/nnotifd")
 
 #define TEST_NNOTIF_OUTPUT  (@"/Users/sassembla/Desktop/nnotif_test.txt")
 
@@ -541,7 +541,8 @@
     TestRunNnotifd * nnotifd = [[TestRunNnotifd alloc]init];
     [nnotifd run:@[
      KEY_IDENTITY,TEST_NOTIFICATION_NAME,
-     KEY_OUTPUT, TEST_OUTPUT]
+     KEY_OUTPUT, TEST_OUTPUT,
+     KEY_VERSION]
      ];
     
     //起動している筈なので、ファイルが書き出されている筈
@@ -565,7 +566,8 @@
     [nnotifd run:@[
      KEY_CONTROL,CODE_START,
      KEY_IDENTITY,TEST_NOTIFICATION_NAME,
-     KEY_OUTPUT, TEST_OUTPUT]
+     KEY_OUTPUT, TEST_OUTPUT,
+     KEY_VERSION]
      ];
     
     //起動している筈なので、ファイルが書き出されている筈
@@ -588,7 +590,8 @@
     TestRunNnotifd * nnotifd = [[TestRunNnotifd alloc]init];
     [nnotifd run:@[
      KEY_IDENTITY,TEST_NOTIFICATION_NAME,
-     KEY_OUTPUT, TEST_OUTPUT]
+     KEY_OUTPUT, TEST_OUTPUT,
+     KEY_VERSION]
      ];
     
     
@@ -615,7 +618,8 @@
     [nnotifd run:@[
      KEY_CONTROL,CODE_START,
      KEY_IDENTITY,TEST_NOTIFICATION_NAME,
-     KEY_OUTPUT, TEST_OUTPUT]
+     KEY_OUTPUT, TEST_OUTPUT,
+     KEY_VERSION]
      ];
     
     
@@ -641,7 +645,8 @@
     TestRunNnotifd * nnotifd = [[TestRunNnotifd alloc]init];
     [nnotifd run:@[
      KEY_IDENTITY,TEST_NOTIFICATION_NAME,
-     KEY_OUTPUT, TEST_OUTPUT]
+     KEY_OUTPUT, TEST_OUTPUT,
+     KEY_VERSION]
      ];
     
     //stop送付
@@ -672,7 +677,8 @@
      KEY_IDENTITY,TEST_NOTIFICATION_NAME,
      KEY_CONTROL,CODE_START,
      KEY_OUTPUT, TEST_OUTPUT,
-     KEY_EXECUTE,@""]
+     KEY_EXECUTE,@"",
+     KEY_VERSION]
      ];
     
     //起動している筈なので、ファイルが書き出されている筈
@@ -694,7 +700,8 @@
     TestRunNnotifd * nnotifd = [[TestRunNnotifd alloc]init];
     [nnotifd run:@[
      KEY_IDENTITY,TEST_NOTIFICATION_NAME,
-     KEY_OUTPUT, TEST_OUTPUT]
+     KEY_OUTPUT, TEST_OUTPUT,
+     KEY_VERSION]
      ];
     
     //execute送付
@@ -726,7 +733,8 @@
     [nnotifd run:@[
      KEY_IDENTITY,TEST_NOTIFICATION_NAME,
      KEY_CONTROL,CODE_START,
-     KEY_OUTPUT, TEST_OUTPUT]
+     KEY_OUTPUT, TEST_OUTPUT,
+     KEY_VERSION]
      ];
     
     NSArray * execsArray = TEST_EXECUTABLE_ARRAY0;
@@ -757,7 +765,8 @@
     [nnotifd run:@[
      KEY_IDENTITY,TEST_NOTIFICATION_NAME,
      KEY_CONTROL,CODE_START,
-     KEY_OUTPUT, TEST_OUTPUT]
+     KEY_OUTPUT, TEST_OUTPUT,
+     KEY_VERSION]
      ];
     
     NSArray * execsArray = TEST_EXECUTABLE_ARRAY1;
@@ -789,7 +798,8 @@
     [nnotifd run:@[
      KEY_IDENTITY,TEST_NOTIFICATION_NAME,
      KEY_CONTROL,CODE_START,
-     KEY_OUTPUT, TEST_OUTPUT]
+     KEY_OUTPUT, TEST_OUTPUT,
+     KEY_VERSION]
      ];
     
     NSArray * execsArray = TEST_EXECUTABLE_ARRAY2;
@@ -823,7 +833,8 @@
     [nnotifd run:@[
      KEY_IDENTITY,TEST_NOTIFICATION_NAME,
      KEY_CONTROL,CODE_START,
-     KEY_OUTPUT, TEST_OUTPUT]
+     KEY_OUTPUT, TEST_OUTPUT,
+     KEY_VERSION]
      ];
     
     NSArray * execsArray = TEST_UNEXECUTABLE_ARRAY0;
@@ -855,7 +866,8 @@
     [nnotifd run:@[
      KEY_IDENTITY,TEST_NOTIFICATION_NAME,
      KEY_CONTROL,CODE_START,
-     KEY_OUTPUT, TEST_OUTPUT]
+     KEY_OUTPUT, TEST_OUTPUT,
+     KEY_VERSION]
      ];
     
     NSArray * execsArray = TEST_UNEXECUTABLE_ARRAY1;

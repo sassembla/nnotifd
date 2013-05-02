@@ -19,7 +19,7 @@ typedef enum {
 } nnotifd_status;
 
 
-#define VERSION (@"0.8.1")
+#define VERSION (@"0.8.4")
 
 #define KEY_VERSION     (@"-v")
 
