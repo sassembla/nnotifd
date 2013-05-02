@@ -29,6 +29,7 @@
     
     bool m_bootFromApp;
     NSMutableArray * m_bufferedOutput;
+    NSMutableArray * m_runningTasks;
 }
 
 /**
@@ -213,6 +214,10 @@
     
     if (argsDict[KEY_KILL]) {
         [[NSDistributedNotificationCenter defaultCenter]removeObserver:self name:m_settingDict[KEY_IDENTITY] object:nil];
+
+        for (NSTask * task in m_runningTasks) {
+            if ([task isRunning]) [task terminate];
+        }
         
         [self writeLogLine:MESSAGE_TEARDOWN];
         
@@ -341,7 +346,13 @@
             [self writeLogLine:[NSString stringWithFormat:@"%@%@ because of:%@", MESSAGE_EXECUTE_FAILED, [jsonArray componentsJoinedByString:NN_SPACE], exception]];
         }
         @finally {
-            
+            [m_runningTasks removeAllObjects];
+            m_runningTasks = [[NSMutableArray alloc]init];
+            for (NSTask * task in tasks) {
+                if ([task isRunning]) {
+                    [m_runningTasks addObject:task];
+                }
+            }
         }
         
     }
@@ -389,6 +400,9 @@
  */
 - (NSArray * )bufferedOutput {
     return m_bufferedOutput;
+}
+- (NSArray * )runningTasks {
+    return m_runningTasks;
 }
 
 - (NSString * )outputPath {

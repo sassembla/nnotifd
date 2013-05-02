@@ -21,10 +21,14 @@
 
 #define TEST_EXECUTABLE_ARRAY2  (@[@"/bin/pwd",@"|",@"/bin/cat", @"/Users/sassembla/Library/Application Support/Sublime Text 2/Packages/SublimeSocket/FilterSettingSamples/TypeScriptFilter.txt", @"|", @"/usr/bin/grep", @"-e", @"runShell"])
 
-#define TEST_EXECUTABLE_ARRAY3  (@[@"/usr/bin/tail", @"-f", @"/Users/sassembla/Library/Developer/Xcode/DerivedData/TimeWriter-gidguisngdpeilgbgumjksyigaai/Build/Products/Debug/TimeWriter.app/Contents/MacOS/test.txt"])
+#define TEST_EXECUTABLE_ARRAY3_TARGET   (@"/Users/sassembla/Desktop/TimeWriterOut1.log")
+#define TEST_EXECUTABLE_ARRAY3  (@[@"/usr/bin/tail", @"-f", TEST_EXECUTABLE_ARRAY3_TARGET])
 
-#define TEST_EXECUTABLE_ARRAY4  (@[@"/usr/bin/tail", @"-f", @"/Users/sassembla/Library/Developer/Xcode/DerivedData/TimeWriter-gidguisngdpeilgbgumjksyigaai/Build/Products/Debug/TimeWriter.app/Contents/MacOS/test.txt", @"|", @"/usr/bin/grep", @"-e", @"0"])
+#define TEST_EXECUTABLE_ARRAY4_TARGET   (@"/Users/sassembla/Desktop/TimeWriterOut2.log")
+#define TEST_EXECUTABLE_ARRAY4  (@[@"/usr/bin/tail", @"-f", TEST_EXECUTABLE_ARRAY4_TARGET, @"|", @"/usr/bin/grep", @"-e", @"0"])
 
+#define TEST_EXECUTABLE_ARRAY5_TARGET   (@"/Users/sassembla/Desktop/noInput.log")
+#define TEST_EXECUTABLE_ARRAY5  (@[@"/usr/bin/tail", @"-f", TEST_EXECUTABLE_ARRAY5_TARGET])
 
 #define TEST_UNEXECUTABLE_ARRAY0    (@[@"unexecutable"])
 #define TEST_UNEXECUTABLE_ARRAY1    (@[@"|"])
@@ -32,7 +36,9 @@
 
 
 
-#define NNOTIF  (@"./nnotif")//pwd = project-folder path.
+#define NNOTIF  (@"./tool/nnotif")//pwd = project-folder path.
+#define TIMEWRITER  (@"./tool/TimeWriter")
+
 #define NNOTIFD (@"/Users/sassembla/Library/Developer/Xcode/DerivedData/nnotifd-ahjyuqfrcnbezcaagbkmwszlhqlj/Build/Products/Debug/nnotifd.app/Contents/MacOS/nnotifd")
 
 #define TEST_NNOTIF_OUTPUT  (@"/Users/sassembla/Desktop/nnotif_test.txt")
@@ -281,6 +287,44 @@
     //teardown済みのログが出ている
     NSArray * readFromOutputArray = [nnotifiedAppDel bufferedOutput];
     STAssertTrue([readFromOutputArray containsObject:MESSAGE_TEARDOWN], @"not contains, %@", readFromOutputArray);
+}
+
+/**
+ AppでのKILLチェック、
+ startしており、
+ tailなど残るTaskを与えられていてkillされる場合
+ */
+- (void) testLaunchAsAppWithoutStartThenReceiveKillWithContinuousTask {
+    NSDictionary * dict = @{KEY_IDENTITY:TEST_NOTIFICATION_NAME,
+                            KEY_CONTROL:CODE_START,
+                            KEY_OUTPUT:TEST_OUTPUT,
+                            DEBUG_BOOTFROMAPP:@""};
+    nnotifiedAppDel = [[AppDelegate alloc]initWithArgs:dict];
+    
+    
+    //tail送付
+    NSArray * execsArray0 = TEST_EXECUTABLE_ARRAY5;
+    NSArray * execArray0 = @[NN_HEADER, KEY_EXECUTE, [self jonizedString:execsArray0]];
+    NSString * exec0 = [execArray0 componentsJoinedByString:NN_SPACE];
+    TestDistNotificationSender * sender0 = [[TestDistNotificationSender alloc] init];
+    [sender0 sendNotification:TEST_NOTIFICATION_NAME withMessage:exec0 withKey:NN_DEFAULT_ROUTE];
+
+    
+    //kill送付
+    NSArray * execArray = @[NN_HEADER, KEY_KILL];
+    NSString * exec = [execArray componentsJoinedByString:NN_SPACE];
+    TestDistNotificationSender * sender = [[TestDistNotificationSender alloc] init];
+    [sender sendNotification:TEST_NOTIFICATION_NAME withMessage:exec withKey:NN_DEFAULT_ROUTE];
+    
+    //teardown済みのログが出ている
+    NSArray * readFromOutputArray = [nnotifiedAppDel bufferedOutput];
+    STAssertTrue([readFromOutputArray containsObject:MESSAGE_TEARDOWN], @"not contains, %@", readFromOutputArray);
+    
+    //残留Taskが一つもない
+    NSArray * restTasks = [nnotifiedAppDel runningTasks];
+    for (NSTask * restTask in restTasks) {
+        STAssertFalse([restTask isRunning], @"not dead, %d,%@", [restTask isRunning], restTask);
+    }
 }
 
 
@@ -833,6 +877,9 @@
 
 /**
  ストリーム閉じない系のコマンドを使った場合の挙動
+ TimeWriterというコマンドラインを使い、ファイルに文字を定期的に書き出す。
+ それをtailするコマンドを動かす。
+ Streamが閉じないので、終了が無い。
  */
 - (void) testExecute_Continuous {
     TestRunNnotifd * nnotifd = [[TestRunNnotifd alloc]init];
@@ -842,6 +889,13 @@
      KEY_OUTPUT, TEST_OUTPUT,
      KEY_VERSION]
      ];
+    
+    
+    //TimeWriter起動
+    NSTask * timeWriterTask = [[NSTask alloc]init];
+    [timeWriterTask setLaunchPath:TIMEWRITER];
+    [timeWriterTask setArguments:@[TEST_EXECUTABLE_ARRAY3_TARGET]];
+    [timeWriterTask launch];
     
     NSArray * execsArray = TEST_EXECUTABLE_ARRAY3;
     
@@ -864,6 +918,9 @@
     NSString * command = [TEST_EXECUTABLE_ARRAY3 componentsJoinedByString:NN_SPACE];
     NSString * expected = [NSString stringWithFormat:@"%@%@", MESSAGE_EXECUTE_LAUNCHED, command];
     STAssertTrue([array containsObject:expected], @"not contains, %@", array);//ここで待つと、標準出力にtailの結果がでるので、まあ動いてるんだと思う。
+
+    //終了
+    [timeWriterTask terminate];
 }
 
 /**
@@ -879,6 +936,12 @@
      KEY_VERSION]
      ];
     
+    //TimeWriter起動
+    NSTask * timeWriterTask = [[NSTask alloc]init];
+    [timeWriterTask setLaunchPath:TIMEWRITER];
+    [timeWriterTask setArguments:@[TEST_EXECUTABLE_ARRAY4_TARGET]];
+    [timeWriterTask launch];
+
     NSArray * execsArray = TEST_EXECUTABLE_ARRAY4;
     
     //notifでexecuteを送り込む
@@ -900,6 +963,8 @@
     NSString * command = [TEST_EXECUTABLE_ARRAY4 componentsJoinedByString:NN_SPACE];
     NSString * expected = [NSString stringWithFormat:@"%@%@", MESSAGE_EXECUTE_LAUNCHED, command];
     STAssertTrue([array containsObject:expected], @"not contains, %@", array);
+    
+    [timeWriterTask terminate];
 }
 
 

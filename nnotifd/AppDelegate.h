@@ -19,7 +19,7 @@ typedef enum {
 } nnotifd_status;
 
 
-#define VERSION (@"0.8.5")
+#define VERSION (@"0.8.6")
 
 #define KEY_VERSION     (@"-v")
 
@@ -75,6 +75,7 @@ typedef enum {
 
 - (void) writeLogLine:(NSString * )message;
 - (NSArray * )bufferedOutput;
+- (NSArray * )runningTasks;
 - (NSString * )outputPath;
 
 @end
