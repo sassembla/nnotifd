@@ -13,7 +13,7 @@
 
 #define TEST_NOTIFICATION_NAME  (@"TEST_NOTIFICATION_NAME_2013/04/29 21:09:03")
 #define TEST_DISTNOTIF_MESSAGE  (@"TEST_DISTNOTIF_MESSAGE_2013/04/30 14:02:35")
-#define TEST_OUTPUT (@"/Users/sassembla/Desktop/test.txt")
+#define TEST_OUTPUT (@"/Users/sassembla/Desktop/nnotifd_test.log")
 
 
 #define TEST_EXECUTABLE_ARRAY0  (@[@"/bin/pwd"])
