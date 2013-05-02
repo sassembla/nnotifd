@@ -333,10 +333,9 @@
         @try {
             for (NSTask * task in tasks) {
                 [task launch];
-//                [task waitUntilExit];//待つと、3がこける、が、エラーじゃない。完了できないのか
             }
             
-            [self writeLogLine:[NSString stringWithFormat:@"%@%@",MESSAGE_EXECUTED, [jsonArray componentsJoinedByString:NN_SPACE]]];
+            [self writeLogLine:[NSString stringWithFormat:@"%@%@",MESSAGE_EXECUTE_LAUNCHED, [jsonArray componentsJoinedByString:NN_SPACE]]];
         }
         @catch (NSException * exception) {
             [self writeLogLine:[NSString stringWithFormat:@"%@%@ because of:%@", MESSAGE_EXECUTE_FAILED, [jsonArray componentsJoinedByString:NN_SPACE], exception]];

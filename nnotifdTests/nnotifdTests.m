@@ -21,9 +21,15 @@
 
 #define TEST_EXECUTABLE_ARRAY2  (@[@"/bin/pwd",@"|",@"/bin/cat", @"/Users/sassembla/Library/Application Support/Sublime Text 2/Packages/SublimeSocket/FilterSettingSamples/TypeScriptFilter.txt", @"|", @"/usr/bin/grep", @"-e", @"runShell"])
 
+#define TEST_EXECUTABLE_ARRAY3  (@[@"/usr/bin/tail", @"-f", @"/Users/sassembla/Library/Developer/Xcode/DerivedData/TimeWriter-gidguisngdpeilgbgumjksyigaai/Build/Products/Debug/TimeWriter.app/Contents/MacOS/test.txt"])
+
+#define TEST_EXECUTABLE_ARRAY4  (@[@"/usr/bin/tail", @"-f", @"/Users/sassembla/Library/Developer/Xcode/DerivedData/TimeWriter-gidguisngdpeilgbgumjksyigaai/Build/Products/Debug/TimeWriter.app/Contents/MacOS/test.txt", @"|", @"/usr/bin/grep", @"-e", @"0"])
+
+
 #define TEST_UNEXECUTABLE_ARRAY0    (@[@"unexecutable"])
 #define TEST_UNEXECUTABLE_ARRAY1    (@[@"|"])
 #define TEST_UNEXECUTABLE_ARRAY2    (@[@"/bin/pwd",@"|",@"|"])
+
 
 
 #define NNOTIF  (@"./nnotif")//pwd = project-folder path.
@@ -417,10 +423,10 @@
     TestDistNotificationSender * sender = [[TestDistNotificationSender alloc] init];
     [sender sendNotification:TEST_NOTIFICATION_NAME withMessage:exec withKey:NN_DEFAULT_ROUTE];
     
-    //MESSAGE_EXECUTEDが残っている
+    //MESSAGE_EXECUTE_LAUNCHEDが残っている
     NSArray * readFromOutputArray = [nnotifiedAppDel bufferedOutput];
     NSString * command = [TEST_EXECUTABLE_ARRAY0 componentsJoinedByString:NN_SPACE];
-    NSString * expected = [NSString stringWithFormat:@"%@%@", MESSAGE_EXECUTED, command];
+    NSString * expected = [NSString stringWithFormat:@"%@%@", MESSAGE_EXECUTE_LAUNCHED, command];
     STAssertTrue([readFromOutputArray containsObject:expected], @"not contains, %@", readFromOutputArray);
 }
 
@@ -442,10 +448,10 @@
     TestDistNotificationSender * sender = [[TestDistNotificationSender alloc] init];
     [sender sendNotification:TEST_NOTIFICATION_NAME withMessage:exec withKey:NN_DEFAULT_ROUTE];
     
-    //MESSAGE_EXECUTEDが残っている
+    //MESSAGE_EXECUTE_LAUNCHEDが残っている
     NSArray * readFromOutputArray = [nnotifiedAppDel bufferedOutput];
     NSString * command = [TEST_EXECUTABLE_ARRAY1 componentsJoinedByString:NN_SPACE];
-    NSString * expected = [NSString stringWithFormat:@"%@%@", MESSAGE_EXECUTED, command];
+    NSString * expected = [NSString stringWithFormat:@"%@%@", MESSAGE_EXECUTE_LAUNCHED, command];
     STAssertTrue([readFromOutputArray containsObject:expected], @"not contains, %@", readFromOutputArray);
 }
 
@@ -468,10 +474,10 @@
     TestDistNotificationSender * sender = [[TestDistNotificationSender alloc] init];
     [sender sendNotification:TEST_NOTIFICATION_NAME withMessage:exec withKey:NN_DEFAULT_ROUTE];
     
-    //MESSAGE_EXECUTEDが残っている
+    //MESSAGE_EXECUTE_LAUNCHEDが残っている
     NSArray * readFromOutputArray = [nnotifiedAppDel bufferedOutput];
     NSString * command = [TEST_EXECUTABLE_ARRAY2 componentsJoinedByString:NN_SPACE];
-    NSString * expected = [NSString stringWithFormat:@"%@%@", MESSAGE_EXECUTED, command];
+    NSString * expected = [NSString stringWithFormat:@"%@%@", MESSAGE_EXECUTE_LAUNCHED, command];
     STAssertTrue([readFromOutputArray containsObject:expected], @"not contains, %@", readFromOutputArray);
 }
 
@@ -753,10 +759,10 @@
     NSData * data = [handle readDataToEndOfFile];
     NSString * string = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
     
-    //MESSAGE_EXECUTEDが残っている
+    //MESSAGE_EXECUTE_LAUNCHEDが残っている
     NSArray * array = [string componentsSeparatedByString:@"\n"];
     NSString * command = [TEST_EXECUTABLE_ARRAY0 componentsJoinedByString:NN_SPACE];
-    NSString * expected = [NSString stringWithFormat:@"%@%@", MESSAGE_EXECUTED, command];
+    NSString * expected = [NSString stringWithFormat:@"%@%@", MESSAGE_EXECUTE_LAUNCHED, command];
     STAssertTrue([array containsObject:expected], @"not contains, %@", array);
 }
 
@@ -785,10 +791,10 @@
     NSData * data = [handle readDataToEndOfFile];
     NSString * string = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
     
-    //MESSAGE_EXECUTEDが残っている
+    //MESSAGE_EXECUTE_LAUNCHEDが残っている
     NSArray * array = [string componentsSeparatedByString:@"\n"];
     NSString * command = [TEST_EXECUTABLE_ARRAY1 componentsJoinedByString:NN_SPACE];
-    NSString * expected = [NSString stringWithFormat:@"%@%@", MESSAGE_EXECUTED, command];
+    NSString * expected = [NSString stringWithFormat:@"%@%@", MESSAGE_EXECUTE_LAUNCHED, command];
     STAssertTrue([array containsObject:expected], @"not contains, %@", array);
 }
 
@@ -818,12 +824,85 @@
     NSData * data = [handle readDataToEndOfFile];
     NSString * string = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
 
-    //MESSAGE_EXECUTEDが残っている
+    //MESSAGE_EXECUTE_LAUNCHEDが残っている
     NSArray * array = [string componentsSeparatedByString:@"\n"];
     NSString * command = [TEST_EXECUTABLE_ARRAY2 componentsJoinedByString:NN_SPACE];
-    NSString * expected = [NSString stringWithFormat:@"%@%@", MESSAGE_EXECUTED, command];
+    NSString * expected = [NSString stringWithFormat:@"%@%@", MESSAGE_EXECUTE_LAUNCHED, command];
     STAssertTrue([array containsObject:expected], @"not contains, %@", array);
 }
+
+/**
+ ストリーム閉じない系のコマンドを使った場合の挙動
+ */
+- (void) testExecute_Continuous {
+    TestRunNnotifd * nnotifd = [[TestRunNnotifd alloc]init];
+    [nnotifd run:@[
+     KEY_IDENTITY,TEST_NOTIFICATION_NAME,
+     KEY_CONTROL,CODE_START,
+     KEY_OUTPUT, TEST_OUTPUT,
+     KEY_VERSION]
+     ];
+    
+    NSArray * execsArray = TEST_EXECUTABLE_ARRAY3;
+    
+    //notifでexecuteを送り込む
+    NSArray * execArray = @[NN_HEADER, KEY_EXECUTE,[self jonizedString:execsArray]];
+    NSString * exec = [execArray componentsJoinedByString:NN_SPACE];
+    
+    TestDistNotificationSender * sender = [[TestDistNotificationSender alloc] init];
+    [sender sendNotification:TEST_NOTIFICATION_NAME withMessage:exec withKey:NN_DEFAULT_ROUTE];
+    
+    
+    //起動している筈なので、ファイルが書き出されている筈
+    NSFileHandle * handle = [NSFileHandle fileHandleForReadingAtPath:TEST_OUTPUT];
+    STAssertNotNil(handle, @"handle is nil");
+    NSData * data = [handle readDataToEndOfFile];
+    NSString * string = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    
+    //MESSAGE_EXECUTE_LAUNCHEDが残っている
+    NSArray * array = [string componentsSeparatedByString:@"\n"];
+    NSString * command = [TEST_EXECUTABLE_ARRAY3 componentsJoinedByString:NN_SPACE];
+    NSString * expected = [NSString stringWithFormat:@"%@%@", MESSAGE_EXECUTE_LAUNCHED, command];
+    STAssertTrue([array containsObject:expected], @"not contains, %@", array);//ここで待つと、標準出力にtailの結果がでるので、まあ動いてるんだと思う。
+}
+
+/**
+ パイプ付きで、tail的な継続出力の動作を確認、OK。
+ ExecutedはLaunch時にでるので、launchedのほうがいい。
+ */
+- (void) testExecute_Continuous_Piped {
+    TestRunNnotifd * nnotifd = [[TestRunNnotifd alloc]init];
+    [nnotifd run:@[
+     KEY_IDENTITY,TEST_NOTIFICATION_NAME,
+     KEY_CONTROL,CODE_START,
+     KEY_OUTPUT, TEST_OUTPUT,
+     KEY_VERSION]
+     ];
+    
+    NSArray * execsArray = TEST_EXECUTABLE_ARRAY4;
+    
+    //notifでexecuteを送り込む
+    NSArray * execArray = @[NN_HEADER, KEY_EXECUTE,[self jonizedString:execsArray]];
+    NSString * exec = [execArray componentsJoinedByString:NN_SPACE];
+    
+    TestDistNotificationSender * sender = [[TestDistNotificationSender alloc] init];
+    [sender sendNotification:TEST_NOTIFICATION_NAME withMessage:exec withKey:NN_DEFAULT_ROUTE];
+    
+    
+    //起動している筈なので、ファイルが書き出されている筈
+    NSFileHandle * handle = [NSFileHandle fileHandleForReadingAtPath:TEST_OUTPUT];
+    STAssertNotNil(handle, @"handle is nil");
+    NSData * data = [handle readDataToEndOfFile];
+    NSString * string = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    
+    //MESSAGE_EXECUTE_LAUNCHEDが残っている
+    NSArray * array = [string componentsSeparatedByString:@"\n"];
+    NSString * command = [TEST_EXECUTABLE_ARRAY4 componentsJoinedByString:NN_SPACE];
+    NSString * expected = [NSString stringWithFormat:@"%@%@", MESSAGE_EXECUTE_LAUNCHED, command];
+    STAssertTrue([array containsObject:expected], @"not contains, %@", array);
+}
+
+
 
 /**
  存在しないコマンドの実行によるエラー
