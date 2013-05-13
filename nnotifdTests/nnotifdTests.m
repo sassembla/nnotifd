@@ -581,6 +581,38 @@
 
 
 
+/**
+ デバッグ表示のテスト、発行直前と直後をカバーする。
+ */
+- (void) testDebug {
+    //起動
+    NSDictionary * dict = @{KEY_IDENTITY:TEST_NOTIFICATION_NAME,
+                            KEY_CONTROL:CODE_START,
+                            KEY_OUTPUT:TEST_OUTPUT,
+                            DEBUG_BOOTFROMAPP:@""};
+    nnotifiedAppDel = [[AppDelegate alloc]initWithArgs:dict];
+    
+    
+    NSArray * execsArray = TEST_UNEXECUTABLE_ARRAY1;
+    
+    //notifでexecuteを送り込む
+    NSArray * execArray = @[NN_HEADER, KEY_EXECUTE,[self jonizedString:execsArray]];
+    NSString * exec = [execArray componentsJoinedByString:NN_SPACE];
+    
+    TestDistNotificationSender * sender = [[TestDistNotificationSender alloc] init];
+    [sender sendNotification:TEST_NOTIFICATION_NAME withMessage:exec withKey:NN_DEFAULT_ROUTE];
+    
+    //MESSAGE_EXECUTE_FAILEDが残っている
+    NSArray * readFromOutputArray = [nnotifiedAppDel bufferedOutput];
+    NSString * expected = [NSString stringWithFormat:@"%@%@%@", MESSAGE_EXECUTE_FAILED, @"| because of:", FAILBY_NOEXEC];
+    STAssertTrue([readFromOutputArray containsObject:expected], @"not contains, %@", readFromOutputArray);
+    
+    //その他に、受け取りに関するデータが残っている
+    
+}
+
+
+
 // <- App / CommandLine -> /////////////////////////////
 
 

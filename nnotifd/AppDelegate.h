@@ -19,7 +19,7 @@ typedef enum {
 } nnotifd_status;
 
 
-#define VERSION (@"0.8.6")
+#define VERSION (@"0.8.7")
 
 #define KEY_VERSION     (@"-v")
 
@@ -47,6 +47,7 @@ typedef enum {
 #define MESSAGE_EXECUTE_IGNOREDBEFORESTART  (@"nnotifd ignored executes before server start")
 #define MESSAGE_EXECUTE_FAILED  (@"nnotifd failed to execute:")
 #define MESSAGE_EXECUTE_LAUNCHED    (@"nnotifd executes was launched:")
+#define MESSAGE_RECEIVED            (@"nnotifd received:")
 #define MESSAGE_MESSAGEID_RECEIVED  (@"nnotifd received notification id:")
 #define MESSAGE_INPUTRECEIVED (@"nnotifd input received")
 #define MESSAGE_UPDATED     (@"nnotifd updated")

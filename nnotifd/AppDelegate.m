@@ -69,8 +69,8 @@
             if (dict[KEY_CONTROL]) {
                 initializedStatus = [self setServe:dict[KEY_CONTROL]];
             }
-            [m_settingDict setValue:[[NSNumber alloc]initWithInt:initializedStatus] forKey:KEY_CONTROL];
             
+            [m_settingDict setValue:[[NSNumber alloc]initWithInt:initializedStatus] forKey:KEY_CONTROL];            
         }
     }
     return self;
@@ -126,6 +126,9 @@
 
 - (void) receiver:(NSNotification * )notif {
     NSDictionary * dict = [notif userInfo];
+    
+    [self writeLogLine:[NSString stringWithFormat:@"%@%@", MESSAGE_RECEIVED, dict]];
+    
     if (dict[NN_DEFAULT_ROUTE]) {
         NSString * execs = [[NSString alloc]initWithString:dict[NN_DEFAULT_ROUTE]];
         if ([execs hasPrefix:NN_HEADER]) {
@@ -144,26 +147,6 @@
                 }
             }
         }
-    }
-
-    
-    switch ([m_settingDict[KEY_CONTROL] intValue]) {
-        case STATUS_STOPPED:{
-            //起動サインなどを受け入れる
-            
-            break;
-        }
-            
-        case STATUS_RUNNING:{
-            //サーブしてるので、内容に合わせた挙動を行う
-            
-            //ルーティングを行う
-            
-            break;
-        }
-            
-        default:
-            break;
     }
 }
 
