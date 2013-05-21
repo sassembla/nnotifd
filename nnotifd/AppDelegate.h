@@ -19,7 +19,7 @@ typedef enum {
 } nnotifd_status;
 
 
-#define VERSION (@"0.8.7")
+#define VERSION (@"0.8.8")
 
 #define KEY_VERSION     (@"-v")
 
@@ -45,6 +45,7 @@ typedef enum {
 #define MESSAGE_LAUNCHED    (@"nnotifd launched")
 #define MESSAGE_EXECUTE_IGNOREDONLAUNCH (@"nnotifd ignored executes on laundh")
 #define MESSAGE_EXECUTE_IGNOREDBEFORESTART  (@"nnotifd ignored executes before server start")
+#define MESSAGE_PREEXECUTE      (@"nnotifd will execute:")
 #define MESSAGE_EXECUTE_FAILED  (@"nnotifd failed to execute:")
 #define MESSAGE_EXECUTE_LAUNCHED    (@"nnotifd executes was launched:")
 #define MESSAGE_RECEIVED            (@"nnotifd received:")
@@ -64,6 +65,7 @@ typedef enum {
 #define DEFINE_PIPE (@"|")
 
 #define FAILBY_NOEXEC   (@"there is no executable command before '|'")
+#define FAILBY_NOSPACEWHILEPIPE   (@"there is no space before '|'. should be separate '|' in -e param")
 
 
 @interface AppDelegate : NSObject <NSApplicationDelegate>

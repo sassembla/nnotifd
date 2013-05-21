@@ -178,6 +178,7 @@
     
     [self writeLogLine:MESSAGE_INPUTRECEIVED];
     
+    
     if (0 < [argsDict count]) {
         [self update:argsDict withParam:jsonParam];
     }
@@ -220,26 +221,25 @@
         latestStatus = [self setServe:argsDict[KEY_CONTROL]];
         [self writeLogLine:MESSAGE_UPDATED];
     }
-    
-    switch (latestStatus) {
-        case STATUS_STOPPED:{
-            if (argsDict[KEY_EXECUTE]) {
+    if (argsDict[KEY_EXECUTE]) {
+        [self writeLogLine:[NSString stringWithFormat:@"%@%@", MESSAGE_PREEXECUTE, jsonParam]];
+        
+        switch (latestStatus) {
+            case STATUS_STOPPED:{
                 [self writeLogLine:MESSAGE_EXECUTE_IGNOREDBEFORESTART];
+                break;
             }
-            break;
-        }
-        case STATUS_RUNNING:{
-            if (argsDict[KEY_EXECUTE]) {
+            case STATUS_RUNNING:{
                 //read JSON
                 [self executeJson:jsonParam];
+                
+                break;
             }
-            break;
+                
+            default:
+                break;
         }
-            
-        default:
-            break;
     }
-    
     
 }
 
@@ -269,6 +269,8 @@
         NSMutableArray * currentOut = [[NSMutableArray alloc]init];
         
         for (NSString * execOrParam in jsonArray) {
+            
+                        
             if ([execOrParam isEqualToString:DEFINE_PIPE]) {//pipe
                 
                 if ([currentExec count] == 0) {
@@ -298,8 +300,17 @@
                 
                 //ready pipe for next
                 [currentOut addObject:pipe];
-                
-            } else {
+                continue;
+            }
+            
+            //not single "|"
+            NSRange range = [execOrParam rangeOfString:DEFINE_PIPE];
+            if (range.location != NSNotFound) {
+                [self writeLogLine:[NSString stringWithFormat:@"%@%@ because of:%@", MESSAGE_EXECUTE_FAILED, [jsonArray componentsJoinedByString:NN_SPACE], FAILBY_NOSPACEWHILEPIPE]];
+                return;
+            }
+
+            {
                 //exec本体かパラメータ
                 if ([currentExec count] == 0) {
                     [currentExec addObject:execOrParam];

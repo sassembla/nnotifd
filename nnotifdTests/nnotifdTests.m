@@ -33,6 +33,7 @@
 #define TEST_UNEXECUTABLE_ARRAY0    (@[@"unexecutable"])
 #define TEST_UNEXECUTABLE_ARRAY1    (@[@"|"])
 #define TEST_UNEXECUTABLE_ARRAY2    (@[@"/bin/pwd",@"|",@"|"])
+#define TEST_CAUTION_ARRAY0         (@[@"/bin/pwd" "|", @"/bin/pwd"])
 
 
 
@@ -579,6 +580,44 @@
     STAssertTrue([readFromOutputArray containsObject:expected], @"not contains, %@", readFromOutputArray);
 }
 
+/**
+ syntax error
+ ->caution no -e value
+ ->show list of execution command
+ */
+- (void) testSyntaxErrorAsApp {
+    NSDictionary * dict = @{KEY_IDENTITY:TEST_NOTIFICATION_NAME,
+                            KEY_CONTROL:CODE_START,
+                            KEY_OUTPUT:TEST_OUTPUT,
+                            DEBUG_BOOTFROMAPP:@""};
+    nnotifiedAppDel = [[AppDelegate alloc]initWithArgs:dict];
+    
+    NSArray * execsArray = TEST_CAUTION_ARRAY0;
+    
+    //notifでexecuteを送り込む
+    NSArray * execArray = @[NN_HEADER, KEY_EXECUTE,[self jonizedString:execsArray]];
+    NSString * exec = [execArray componentsJoinedByString:NN_SPACE];
+    
+    TestDistNotificationSender * sender = [[TestDistNotificationSender alloc] init];
+    [sender sendNotification:TEST_NOTIFICATION_NAME withMessage:exec withKey:NN_DEFAULT_ROUTE];
+    
+    //起動している筈なので、ファイルが書き出されている筈
+    NSFileHandle * handle = [NSFileHandle fileHandleForReadingAtPath:TEST_OUTPUT];
+    STAssertNotNil(handle, @"handle is nil");
+    NSData * data = [handle readDataToEndOfFile];
+    NSString * string = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    
+    //MESSAGE_PREEXECUTEが残っている
+    NSArray * array = [string componentsSeparatedByString:@"\n"];
+    NSString * expected0 = [NSString stringWithFormat:@"%@%@", MESSAGE_PREEXECUTE, @"[\"/bin/pwd|\",\"/bin/pwd\"]"];
+    STAssertTrue([array containsObject:expected0], @"not contains, %@", array);
+    
+    //MESSAGE_EXECUTE_FAILEDが残っている
+    NSString * expected = [NSString stringWithFormat:@"%@%@%@%@", MESSAGE_EXECUTE_FAILED, @"/bin/pwd| /bin/pwd", @" because of:", FAILBY_NOSPACEWHILEPIPE];
+    STAssertTrue([array containsObject:expected], @"not contains, %@", array);
+}
+
+
 
 
 /**
@@ -1035,7 +1074,7 @@
 }
 
 /**
- 構文エラーによるエラー
+ execution error
  */
 - (void) testUnparseableCommand {
     TestRunNnotifd * nnotifd = [[TestRunNnotifd alloc]init];
@@ -1067,6 +1106,44 @@
     STAssertTrue([array containsObject:expected], @"not contains, %@", array);
 }
 
+/**
+ syntax error
+ ->caution no -e value
+ ->show list of execution command
+ */
+- (void) testSyntaxError {
+    TestRunNnotifd * nnotifd = [[TestRunNnotifd alloc]init];
+    [nnotifd run:@[
+     KEY_IDENTITY,TEST_NOTIFICATION_NAME,
+     KEY_CONTROL,CODE_START,
+     KEY_OUTPUT, TEST_OUTPUT,
+     KEY_VERSION]
+     ];
+    
+    NSArray * execsArray = TEST_CAUTION_ARRAY0;
+    
+    //notifでexecuteを送り込む
+    NSArray * execArray = @[NN_HEADER, KEY_EXECUTE,[self jonizedString:execsArray]];
+    NSString * exec = [execArray componentsJoinedByString:NN_SPACE];
+    
+    TestDistNotificationSender * sender = [[TestDistNotificationSender alloc] init];
+    [sender sendNotification:TEST_NOTIFICATION_NAME withMessage:exec withKey:NN_DEFAULT_ROUTE];
+    
+    //起動している筈なので、ファイルが書き出されている筈
+    NSFileHandle * handle = [NSFileHandle fileHandleForReadingAtPath:TEST_OUTPUT];
+    STAssertNotNil(handle, @"handle is nil");
+    NSData * data = [handle readDataToEndOfFile];
+    NSString * string = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    
+    //MESSAGE_PREEXECUTEが残っている
+    NSArray * array = [string componentsSeparatedByString:@"\n"];
+    NSString * expected0 = [NSString stringWithFormat:@"%@%@", MESSAGE_PREEXECUTE, @"[\"/bin/pwd|\",\"/bin/pwd\"]"];
+    STAssertTrue([array containsObject:expected0], @"not contains, %@", array);
+    
+    //MESSAGE_EXECUTE_FAILEDが残っている
+    NSString * expected = [NSString stringWithFormat:@"%@%@%@%@", MESSAGE_EXECUTE_FAILED, @"/bin/pwd| /bin/pwd", @" because of:", FAILBY_NOSPACEWHILEPIPE];
+    STAssertTrue([array containsObject:expected], @"not contains, %@", array);
+}
 
 
 
